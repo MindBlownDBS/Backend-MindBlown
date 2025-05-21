@@ -1,4 +1,4 @@
-const { registerHandler, loginHandler } = require("./handler");
+const { registerHandler, loginHandler, mindTrackerHandler } = require("./handler");
 
 const routes = [
     {
@@ -11,6 +11,11 @@ const routes = [
         path: '/login',
         handler: loginHandler,
     },
+    {
+        method: 'POST',
+        path: '/mindTracker',
+        handler: mindTrackerHandler,
+    }
 ];
 
 module.exports = routes;

@@ -1,5 +1,6 @@
 const Bcrypt = require('bcrypt');
-const users = require('./models/user')
+const users = require('./models/user');
+const mindTracker = require('./models/mindTracker');
 
 const registerHandler = async (request, h) => {
     try {
@@ -70,7 +71,7 @@ const registerHandler = async (request, h) => {
             message: 'Terjadi kesalahan server'
         }).code(500);
     }
-}
+};
 
 const loginHandler = async (request, h) => {
     try {
@@ -123,4 +124,37 @@ const loginHandler = async (request, h) => {
     }
 };
 
-module.exports = { registerHandler, loginHandler };
+const mindTrackerHandler = async (request, h) => {
+    try {
+        const { progress, mood } = request.payload;
+
+        if (!progress || !mood) {
+            return h.response({ 
+                error: true,
+                message: 'Fields progres dan mood harus diisi'
+            }).code(400);
+        }
+
+        const newProgress = await mindTracker.create({
+            progress,
+            mood,
+            date: new Date().toISOString(),
+            createdAt: new Date().toISOString()
+        });
+
+        return h.response({
+            error: false,
+            message: 'Progress berhasil disimpan',
+            data: newProgress
+        }).code(201);
+
+    } catch (error) {
+        console.error('Error mindTrackerHandler:', error);
+        return h.response({ 
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
+module.exports = { registerHandler, loginHandler, mindTrackerHandler };

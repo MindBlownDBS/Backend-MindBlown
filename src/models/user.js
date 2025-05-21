@@ -11,6 +11,9 @@ const userSchema = new mongoose.Schema({
         createdAt: { type: Date, default: Date.now },
         expiresAt: { type: Date }
     }]
+}, { 
+    timestamps: true,
+    collection: 'user'
 });
 
 module.exports = mongoose.model('User', userSchema);
