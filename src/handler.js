@@ -151,6 +151,7 @@ const mindTrackerHandler = async (request, h) => {
     try {
         const { progress, mood } = request.payload;        
         const userId = request.auth.credentials.id;
+        const username = request.auth.credentials.username;
 
         if (!progress || !mood) {
             return h.response({ 
@@ -161,6 +162,7 @@ const mindTrackerHandler = async (request, h) => {
 
         const newProgress = await mindTracker.create({
             userId: userId,
+            username: username,
             progress,
             mood,
             date: new Date().toISOString(),
