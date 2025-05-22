@@ -1,6 +1,8 @@
 const Bcrypt = require('bcrypt');
+const JWT = require('@hapi/jwt');
 const users = require('./models/user');
 const mindTracker = require('./models/mindTracker');
+const { privateKey } = require('./config/jwt');
 
 const registerHandler = async (request, h) => {
     try {
@@ -106,18 +108,34 @@ const loginHandler = async (request, h) => {
             }).code(401);
         }
 
+        const token = JWT.token.generate(
+            {
+                aud: 'urn:audience:test',
+                iss: 'urn:issuer:test',
+                sub: false,
+                id: user._id,
+                username: user.username,
+                email: user.email
+            },
+            {
+                key: privateKey,
+                algorithm: 'RS256'
+            }
+        );
+
         return h.response({
             error: false,
             message: 'Login berhasil',
             data: {
                 name: user.name,
-                username: '@' + user.username,
-                email: user.email
-            },
+                username: user.username,
+                email: user.email,
+                token
+            }
         }).code(200);
     } catch (error) {
         console.error('Error loginHandler:', error);
-        return h.response({ 
+        return h.response({
             error: true,
             message: 'Terjadi kesalahan server'
         }).code(500);

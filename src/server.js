@@ -1,8 +1,9 @@
 const Hapi = require('@hapi/hapi');
 const JWT = require('@hapi/jwt');
 const routes = require('./routes');
-const { JWT_SECRET } = require('./config/jwt');
+const { privateKey } = require('./config/jwt');
 const connectDB = require('./db');
+const { jwtStrategy } = require('./auth/auth');
 
 const init = async () => {
     await connectDB();
@@ -17,24 +18,9 @@ const init = async () => {
     });
 
     await server.register(JWT);
-
-    server.auth.strategy('jwt', 'jwt', {
-        keys: JWT_SECRET,
-        verify: {
-            aud: false,
-            iss: false,
-            sub: false,
-            maxAgeSec: 86400
-        },
-        validate: (artifacts) => {
-            return {
-                isValid: true,
-                credentials: artifacts.decoded.payload
-            };
-        }
-    });
-
+    server.auth.strategy('jwt', jwtStrategy.scheme, jwtStrategy.options);
     server.auth.default('jwt');
+    
     server.route(routes);
 
     await server.start();
