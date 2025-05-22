@@ -1,25 +1,16 @@
-const crypto = require('crypto');
+require('dotenv').config();
 
-try {
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
-        modulusLength: 2048,
-        publicKeyEncoding: {
-            type: 'spki',
-            format: 'pem'
-        },
-        privateKeyEncoding: {
-            type: 'pkcs8',
-            format: 'pem'
-        }
-    });
+const jwtSecretKey = process.env.JWT_SECRET_KEY;
+const jwtAlgorithm = process.env.JWT_ALGORITHM || 'HS256';
+const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '24h';
 
-    module.exports = {
-        publicKey,
-        privateKey,
-        algorithm: 'RS256',
-        expiresIn: '24h'
-    };
-} catch (error) {
-    console.error('Error generating JWT keys:', error);
+if (!jwtSecretKey) {
+    console.error('JWT_SECRET_KEY environment variable is not set');
     process.exit(1);
 }
+
+module.exports = {
+    key: jwtSecretKey,
+    algorithm: jwtAlgorithm,
+    expiresIn: jwtExpiresIn,
+};

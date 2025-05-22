@@ -1,7 +1,6 @@
 const Hapi = require('@hapi/hapi');
 const JWT = require('@hapi/jwt');
 const routes = require('./routes');
-const { privateKey } = require('./config/jwt');
 const connectDB = require('./db');
 const { jwtStrategy } = require('./auth/auth');
 

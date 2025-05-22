@@ -1,16 +1,16 @@
-const { privateKey } = require('../config/jwt');
+const { key } = require('../config/jwt');
 
 const jwtStrategy = {
     scheme: 'jwt',
     options: {
-        keys: privateKey,
+        keys: key,
         verify: {
             aud: false,
             iss: false,
             sub: false,
             maxAgeSec: 86400
         },
-        validate: async (artifacts, request, h) => {
+        validate: async (artifacts) => {
             return {
                 isValid: true,
                 credentials: artifacts.decoded.payload

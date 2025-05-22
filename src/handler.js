@@ -2,7 +2,7 @@ const Bcrypt = require('bcrypt');
 const JWT = require('@hapi/jwt');
 const users = require('./models/user');
 const mindTracker = require('./models/mindTracker');
-const { privateKey } = require('./config/jwt');
+const { key, algorithm } = require('./config/jwt');
 
 const registerHandler = async (request, h) => {
     try {
@@ -110,16 +110,21 @@ const loginHandler = async (request, h) => {
 
         const token = JWT.token.generate(
             {
-                aud: 'urn:audience:test',
-                iss: 'urn:issuer:test',
-                sub: false,
-                id: user._id,
+                aud: 'urn:audience:mindblown',
+                iss: 'urn:issuer:mindblown',
+                sub: user._id.toString(),
+                
+                id: user._id.toString(),
                 username: user.username,
-                email: user.email
+                email: user.email,
+                name: user.name
             },
             {
-                key: privateKey,
-                algorithm: 'RS256'
+                key: key,
+                algorithm: algorithm
+            },
+            {
+                ttlSec: 86400
             }
         );
 
@@ -144,7 +149,8 @@ const loginHandler = async (request, h) => {
 
 const mindTrackerHandler = async (request, h) => {
     try {
-        const { progress, mood } = request.payload;
+        const { progress, mood } = request.payload;        
+        const userId = request.auth.credentials.id;
 
         if (!progress || !mood) {
             return h.response({ 
@@ -154,6 +160,7 @@ const mindTrackerHandler = async (request, h) => {
         }
 
         const newProgress = await mindTracker.create({
+            userId: userId,
             progress,
             mood,
             date: new Date().toISOString(),
