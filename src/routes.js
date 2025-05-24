@@ -1,4 +1,4 @@
-const { registerHandler, loginHandler, mindTrackerHandler } = require("./handler");
+const { registerHandler, loginHandler, mindTrackerHandler, checkMindTrackerHandler, getMindTrackerHandler } = require("./handler");
 
 const routes = [
     {
@@ -21,6 +21,22 @@ const routes = [
         method: 'POST',
         path: '/mindTracker',
         handler: mindTrackerHandler,
+        options: {
+            auth: 'jwt',
+        }
+    },
+    {
+        method: 'GET',
+        path: '/mindTracker/check/{date}',
+        handler: checkMindTrackerHandler,
+        options: {
+            auth: 'jwt',
+        }
+    },
+    {
+        method: 'GET',
+        path: '/mindTracker/{date}',
+        handler: getMindTrackerHandler,
         options: {
             auth: 'jwt',
         }

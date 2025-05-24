@@ -184,4 +184,76 @@ const mindTrackerHandler = async (request, h) => {
     }
 };
 
-module.exports = { registerHandler, loginHandler, mindTrackerHandler };
+const checkMindTrackerHandler = async (request, h) => {
+    try {
+        const userId = request.auth.credentials.id;
+        const { date } = request.params;
+        
+        const startDate = new Date(`${date}T00:00:00.000Z`);
+        const endDate = new Date(`${date}T23:59:59.999Z`);
+        
+        const entry = await mindTracker.findOne({
+            date: {
+                $gte: startDate,
+                $lte: endDate
+            },
+            userId: userId
+        });
+        
+        return { exists: !!entry };
+    } catch (error) {
+        console.error('Error checking mind tracker entry:', error);
+        return h.response({ 
+            error: true, 
+            message: 'Error checking mind tracker entry'
+        }).code(500);
+    }
+};
+
+const getMindTrackerHandler = async (request, h) => {
+    try {
+        const { date } = request.params;
+        const { id: userId } = request.auth.credentials;
+        
+        // Create start and end date for the given date (to match entire day)
+        const startDate = new Date(date);
+        startDate.setHours(0, 0, 0, 0);
+        
+        const endDate = new Date(date);
+        endDate.setHours(23, 59, 59, 999);
+        
+        // Find entry in database for this user and date range
+        const entry = await mindTracker.findOne({
+            userId,
+            date: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        });
+        
+        if (entry) {
+            return h.response({
+                status: 'success',
+                data: {
+                    mood: entry.mood,
+                    progress: entry.progress
+                }
+            }).code(200);
+        }
+        
+        return h.response({
+            status: 'success',
+            message: 'No entry found for this date',
+            data: null
+        }).code(200);
+        
+    } catch (error) {
+        console.error(error);
+        return h.response({
+            status: 'error',
+            message: 'Server error'
+        }).code(500);
+    }
+};
+
+module.exports = { registerHandler, loginHandler, mindTrackerHandler, checkMindTrackerHandler, getMindTrackerHandler };
