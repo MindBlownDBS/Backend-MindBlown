@@ -2,6 +2,7 @@ const Bcrypt = require('bcrypt');
 const JWT = require('@hapi/jwt');
 const users = require('./models/user');
 const mindTracker = require('./models/mindTracker');
+const { Story, Comment } = require('./models/story');
 const { key, algorithm } = require('./config/jwt');
 
 const registerHandler = async (request, h) => {
@@ -256,4 +257,345 @@ const getMindTrackerHandler = async (request, h) => {
     }
 };
 
-module.exports = { registerHandler, loginHandler, mindTrackerHandler, checkMindTrackerHandler, getMindTrackerHandler };
+const createStoryHandler = async (request, h) => {
+    try {
+        const { content, isAnonymous } = request.payload;
+        const user = request.auth.credentials;
+
+        if (!content) {
+            return h.response({
+                error: true,
+                message: 'Cerita tidak boleh kosong'
+            }).code(400);
+        }
+
+        const story = new Story({
+            userId: user.id,
+            username: isAnonymous ? 'Anonim' : user.username,
+            name: isAnonymous ? 'Pengguna' : user.name,
+            content,
+            isAnonymous: !!isAnonymous
+        });
+
+        await story.save();
+
+        return h.response({
+            error: false,
+            message: 'Cerita berhasil diunggah',
+            data: story
+        }).code(201);
+    } catch (error) {
+        console.error('Error createStoryHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
+const getStoriesHandler = async (request, h) => {
+    try {
+        const stories = await Story.find({})
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const allCommentIds = stories.flatMap(story => story.comments);
+        
+        const directComments = await Comment.find({
+            _id: { $in: allCommentIds }
+        }).lean();
+        
+        const commentReplyCounts = {};
+        
+        await Promise.all(directComments.map(async (comment) => {
+            const replyCount = await countAllReplies(comment._id);
+            commentReplyCounts[comment._id] = replyCount;
+        }));
+        
+        const formattedStories = stories.map(story => {
+            let totalCommentCount = story.comments.length;
+            
+            story.comments.forEach(commentId => {
+                totalCommentCount += (commentReplyCounts[commentId] || 0);
+            });
+            
+            return {
+                ...story,
+                likeCount: story.likes.length,
+                commentCount: story.comments.length,
+                totalCommentCount: totalCommentCount
+            };
+        });
+
+        return h.response({
+            error: false,
+            data: formattedStories
+        }).code(200);
+    } catch (error) {
+        console.error('Error getStoriesHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
+const likeStoryHandler = async (request, h) => {
+    try {
+        const { storyId } = request.params;
+        const userId = request.auth.credentials.id;
+
+        const story = await Story.findById(storyId);
+        if (!story) {
+            return h.response({
+                error: true,
+                message: 'Story tidak ditemukan'
+            }).code(404);
+        }
+
+        const index = story.likes.indexOf(userId);
+        if (index === -1) {
+            story.likes.push(userId);
+        } else {
+            story.likes.splice(index, 1);
+        }
+        await story.save();
+
+        return h.response({
+            error: false,
+            message: index === -1 ? 'Story disukai' : 'Like dibatalkan',
+            likeCount: story.likes.length
+        }).code(200);
+    } catch (error) {
+        console.error('Error likeStoryHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
+const commentStoryHandler = async (request, h) => {
+    try {
+        const { storyId } = request.params;
+        const { content } = request.payload;
+        const user = request.auth.credentials;
+
+        if (!content) {
+            return h.response({
+                error: true,
+                message: 'Komentar tidak boleh kosong'
+            }).code(400);
+        }
+
+        const story = await Story.findById(storyId);
+        if (!story) {
+            return h.response({
+                error: true,
+                message: 'Story tidak ditemukan'
+            }).code(404);
+        }
+
+        const comment = new Comment({
+            userId: user.id,
+            username: user.username,
+            name: user.name,
+            content
+        });
+        
+        await comment.save();
+        
+        story.comments.push(comment._id);
+        await story.save();
+
+        return h.response({
+            error: false,
+            message: 'Komentar berhasil ditambahkan',
+            commentCount: story.comments.length,
+            commentId: comment._id
+        }).code(201);
+    } catch (error) {
+        console.error('Error commentStoryHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
+const replyCommentHandler = async (request, h) => {
+    try {
+        const { commentId } = request.params;
+        const { content } = request.payload;
+        const user = request.auth.credentials;
+
+        if (!content) {
+            return h.response({
+                error: true,
+                message: 'Balasan tidak boleh kosong'
+            }).code(400);
+        }
+
+        const parentComment = await Comment.findById(commentId);
+        if (!parentComment) {
+            return h.response({
+                error: true,
+                message: 'Komentar tidak ditemukan'
+            }).code(404);
+        }
+
+        const reply = new Comment({
+            userId: user.id,
+            username: user.username,
+            name: user.name,
+            content,
+            parentCommentId: commentId
+        });
+        
+        await reply.save();
+        
+        parentComment.replies.push(reply._id);
+        await parentComment.save();
+        
+        let story = await Story.findOne({ comments: commentId });
+        
+        if (!story && parentComment.parentCommentId) {
+            let originalComment = await Comment.findById(parentComment.parentCommentId);
+            if (originalComment) {
+                story = await Story.findOne({ comments: originalComment._id });
+            }
+        }
+        
+        return h.response({
+            error: false,
+            message: 'Balasan berhasil ditambahkan',
+            replyId: reply._id
+        }).code(201);
+    } catch (error) {
+        console.error('Error replyCommentHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
+const getStoryDetailHandler = async (request, h) => {
+    try {
+        const { storyId } = request.params;
+
+        const story = await Story.findById(storyId)
+            .lean();
+        
+        if (!story) {
+            return h.response({
+                error: true,
+                message: 'Story tidak ditemukan'
+            }).code(404);
+        }
+
+        const comments = await Comment.find({
+            _id: { $in: story.comments }
+        }).lean();
+
+        let replyCount = 0;
+        for (const comment of comments) {
+            replyCount += await countAllReplies(comment._id);
+        }
+
+        const relevantReplies = await Comment.find({
+            parentCommentId: { $in: story.comments }
+        }).lean();
+
+        const allReplyIds = relevantReplies.map(reply => reply._id);
+        let nestedReplies = [];
+        
+        if (allReplyIds.length > 0) {
+            nestedReplies = await Comment.find({
+                parentCommentId: { $in: allReplyIds }
+            }).lean();
+            
+            let currentLevelIds = nestedReplies.map(reply => reply._id);
+            
+            while (currentLevelIds.length > 0) {
+                const nextLevel = await Comment.find({
+                    parentCommentId: { $in: currentLevelIds }
+                }).lean();
+                
+                if (nextLevel.length === 0) break;
+                
+                nestedReplies = [...nestedReplies, ...nextLevel];
+                currentLevelIds = nextLevel.map(reply => reply._id);
+            }
+        }
+
+        const allReplies = [...relevantReplies, ...nestedReplies];
+        
+        const commentMap = {};
+        comments.forEach(comment => {
+            comment.replies = [];
+            commentMap[comment._id.toString()] = comment;
+        });
+
+        allReplies.forEach(reply => {
+            reply.replies = [];
+            commentMap[reply._id.toString()] = reply;
+        });
+
+        allReplies.forEach(reply => {
+            const parentId = reply.parentCommentId.toString();
+            if (commentMap[parentId]) {
+                commentMap[parentId].replies.push(reply);
+            }
+        });
+
+        story.comments = comments.filter(c => !c.parentCommentId);
+
+        const totalCommentCount = comments.length + allReplies.length;
+
+        // Add like and comment counts
+        const detail = {
+            ...story,
+            likeCount: story.likes.length,
+            commentCount: story.comments.length,
+            totalCommentCount: totalCommentCount
+        };
+
+        return h.response({
+            error: false,
+            data: detail
+        }).code(200);
+    } catch (error) {
+        console.error('Error getStoryDetailHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
+async function countAllReplies(commentId) {
+    const directReplies = await Comment.find({ parentCommentId: commentId });
+    let totalReplies = directReplies.length;
+    
+    // Recursively count replies to replies
+    for (const reply of directReplies) {
+        totalReplies += await countAllReplies(reply._id);
+    }
+    
+    return totalReplies;
+}
+
+module.exports = { 
+    registerHandler, 
+    loginHandler, 
+    mindTrackerHandler,
+    checkMindTrackerHandler,
+    getMindTrackerHandler, 
+    createStoryHandler, 
+    getStoriesHandler, 
+    likeStoryHandler, 
+    commentStoryHandler, 
+    replyCommentHandler,
+    getStoryDetailHandler
+};

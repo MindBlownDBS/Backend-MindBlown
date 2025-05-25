@@ -1,4 +1,16 @@
-const { registerHandler, loginHandler, mindTrackerHandler, checkMindTrackerHandler, getMindTrackerHandler } = require("./handler");
+const { 
+    registerHandler, 
+    loginHandler, 
+    mindTrackerHandler, 
+    checkMindTrackerHandler,
+    getMindTrackerHandler,
+    createStoryHandler, 
+    getStoriesHandler, 
+    likeStoryHandler, 
+    commentStoryHandler, 
+    replyCommentHandler,
+    getStoryDetailHandler 
+} = require("./handler");
 
 const routes = [
     {
@@ -40,6 +52,48 @@ const routes = [
         options: {
             auth: 'jwt',
         }
+    },
+    {
+        method: 'POST',
+        path: '/stories',
+        options: {
+            auth: 'jwt',
+            handler: createStoryHandler
+        }
+    },
+    {
+        method: 'GET',
+        path: '/stories',
+        handler: getStoriesHandler
+    },
+    {
+        method: 'POST',
+        path: '/stories/{storyId}/like',
+        options: {
+            auth: 'jwt',
+            handler: likeStoryHandler
+        }
+    },
+    {
+        method: 'POST',
+        path: '/stories/{storyId}/comment',
+        options: {
+            auth: 'jwt',
+            handler: commentStoryHandler
+        }
+    },
+    {
+        method: 'POST',
+        path: '/comments/{commentId}/reply',
+        options: {
+            auth: 'jwt',
+            handler: replyCommentHandler
+        }
+    },
+    {
+        method: 'GET',
+        path: '/stories/{storyId}',
+        handler: getStoryDetailHandler
     }
 ];
 
