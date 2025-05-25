@@ -293,6 +293,53 @@ const createStoryHandler = async (request, h) => {
     }
 };
 
+const editStoryHandler = async (request, h) => {
+    try {
+        const { storyId } = request.params;
+        const { content } = request.payload;
+        const userId = request.auth.credentials.id;
+
+        if (!content) {
+            return h.response({
+                error: true,
+                message: 'Konten cerita tidak boleh kosong'
+            }).code(400);
+        }
+
+        const story = await Story.findById(storyId);
+        
+        if (!story) {
+            return h.response({
+                error: true,
+                message: 'Story tidak ditemukan'
+            }).code(404);
+        }
+
+        if (story.userId.toString() !== userId) {
+            return h.response({
+                error: true,
+                message: 'Anda tidak memiliki izin untuk mengedit cerita ini'
+            }).code(403);
+        }
+
+        story.content = content;
+        story.updatedAt = new Date();
+        await story.save();
+
+        return h.response({
+            error: false,
+            message: 'Cerita berhasil diperbarui',
+            data: story
+        }).code(200);
+    } catch (error) {
+        console.error('Error editStoryHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
 const getStoriesHandler = async (request, h) => {
     try {
         const stories = await Story.find({})
@@ -312,8 +359,23 @@ const getStoriesHandler = async (request, h) => {
             commentReplyCounts[comment._id] = replyCount;
         }));
         
+        const formattedComments = directComments.map(comment => ({
+            ...comment,
+            likeCount: comment.likes.length,
+            replyCount: commentReplyCounts[comment._id] || 0
+        }));
+        
+        const commentMap = {};
+        formattedComments.forEach(comment => {
+            commentMap[comment._id.toString()] = comment;
+        });
+        
         const formattedStories = stories.map(story => {
             let totalCommentCount = story.comments.length;
+            
+            const storyComments = story.comments.map(commentId => 
+                commentMap[commentId.toString()]
+            ).filter(Boolean);
             
             story.comments.forEach(commentId => {
                 totalCommentCount += (commentReplyCounts[commentId] || 0);
@@ -323,7 +385,8 @@ const getStoriesHandler = async (request, h) => {
                 ...story,
                 likeCount: story.likes.length,
                 commentCount: story.comments.length,
-                totalCommentCount: totalCommentCount
+                totalCommentCount: totalCommentCount,
+                comments: storyComments
             };
         });
 
@@ -480,6 +543,100 @@ const replyCommentHandler = async (request, h) => {
     }
 };
 
+const likeCommentHandler = async (request, h) => {
+    try {
+        const { commentId } = request.params;
+        const userId = request.auth.credentials.id;
+
+        const comment = await Comment.findById(commentId);
+        if (!comment) {
+            return h.response({
+                error: true,
+                message: 'Comment tidak ditemukan'
+            }).code(404);
+        }
+
+        const index = comment.likes.indexOf(userId);
+        if (index === -1) {
+            comment.likes.push(userId);
+        } else {
+            comment.likes.splice(index, 1);
+        }
+        await comment.save();
+
+        return h.response({
+            error: false,
+            message: index === -1 ? 'Comment disukai' : 'Like dibatalkan',
+            likeCount: comment.likes.length
+        }).code(200);
+    } catch (error) {
+        console.error('Error likeCommentHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
+const deleteCommentHandler = async (request, h) => {
+    try {
+        const { commentId } = request.params;
+        const userId = request.auth.credentials.id;
+
+        const comment = await Comment.findById(commentId);
+        
+        if (!comment) {
+            return h.response({
+                error: true,
+                message: 'Komentar tidak ditemukan'
+            }).code(404);
+        }
+
+        if (comment.userId.toString() !== userId) {
+            return h.response({
+                error: true,
+                message: 'Anda tidak memiliki izin untuk menghapus komentar ini'
+            }).code(403);
+        }
+
+        if (comment.parentCommentId) {
+            await Comment.findByIdAndUpdate(comment.parentCommentId, {
+                $pull: { replies: commentId }
+            });
+        } else {
+            await Story.findOneAndUpdate(
+                { comments: commentId },
+                { $pull: { comments: commentId }}
+            );
+        }
+
+        await deleteAllReplies(commentId);
+
+        await Comment.findByIdAndDelete(commentId);
+
+        return h.response({
+            error: false,
+            message: 'Komentar berhasil dihapus'
+        }).code(200);
+    } catch (error) {
+        console.error('Error deleteCommentHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
+async function deleteAllReplies(commentId) {
+    const replies = await Comment.find({ parentCommentId: commentId });
+    
+    for (const reply of replies) {
+        await deleteAllReplies(reply._id);
+    }
+    
+    await Comment.deleteMany({ parentCommentId: commentId });
+}
+
 const getStoryDetailHandler = async (request, h) => {
     try {
         const { storyId } = request.params;
@@ -531,6 +688,14 @@ const getStoryDetailHandler = async (request, h) => {
 
         const allReplies = [...relevantReplies, ...nestedReplies];
         
+        comments.forEach(comment => {
+            comment.likeCount = comment.likes ? comment.likes.length : 0;
+        });
+        
+        allReplies.forEach(reply => {
+            reply.likeCount = reply.likes ? reply.likes.length : 0;
+        });
+        
         const commentMap = {};
         comments.forEach(comment => {
             comment.replies = [];
@@ -553,7 +718,6 @@ const getStoryDetailHandler = async (request, h) => {
 
         const totalCommentCount = comments.length + allReplies.length;
 
-        // Add like and comment counts
         const detail = {
             ...story,
             likeCount: story.likes.length,
@@ -578,7 +742,6 @@ async function countAllReplies(commentId) {
     const directReplies = await Comment.find({ parentCommentId: commentId });
     let totalReplies = directReplies.length;
     
-    // Recursively count replies to replies
     for (const reply of directReplies) {
         totalReplies += await countAllReplies(reply._id);
     }
@@ -593,9 +756,12 @@ module.exports = {
     checkMindTrackerHandler,
     getMindTrackerHandler, 
     createStoryHandler, 
+    editStoryHandler,
     getStoriesHandler, 
     likeStoryHandler, 
-    commentStoryHandler, 
+    commentStoryHandler,
     replyCommentHandler,
+    likeCommentHandler, 
+    deleteCommentHandler,
     getStoryDetailHandler
 };
