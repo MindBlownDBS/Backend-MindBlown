@@ -1,11 +1,14 @@
 const { 
     registerHandler, 
     loginHandler, 
+    getUserProfileHandler,
+    editProfileHandler,
     mindTrackerHandler,
     checkMindTrackerHandler,
     getMindTrackerHandler, 
     createStoryHandler, 
     editStoryHandler,
+    deleteStoryHandler,
     getStoriesHandler, 
     likeStoryHandler, 
     commentStoryHandler,
@@ -30,6 +33,22 @@ const routes = [
         handler: loginHandler,
         options: {
             auth: false,
+        }
+    },
+    {
+        method: 'GET',
+        path: '/profile/{username}',
+        options: {
+            auth: 'jwt',
+            handler: getUserProfileHandler
+        }
+    },
+    {
+        method: 'PUT',
+        path: '/profile',
+        options: {
+            auth: 'jwt',
+            handler: editProfileHandler
         }
     },
     {
@@ -58,7 +77,7 @@ const routes = [
     },
     {
         method: 'POST',
-        path: '/stories',
+        path: '/story',
         options: {
             auth: 'jwt',
             handler: createStoryHandler
@@ -66,20 +85,33 @@ const routes = [
     },
     {
         method: 'PUT',
-        path: '/stories/{storyId}',
+        path: '/story/{storyId}',
         options: {
             auth: 'jwt',
             handler: editStoryHandler
         }
     },
     {
+        method: 'DELETE',
+        path: '/story/{storyId}',
+        options: {
+            auth: 'jwt',
+            handler: deleteStoryHandler
+        }
+    },
+    {
         method: 'GET',
-        path: '/stories',
+        path: '/story',
         handler: getStoriesHandler
     },
     {
+        method: 'GET',
+        path: '/story/{storyId}',
+        handler: getStoryDetailHandler
+    },
+    {
         method: 'POST',
-        path: '/stories/{storyId}/like',
+        path: '/story/{storyId}/like',
         options: {
             auth: 'jwt',
             handler: likeStoryHandler
@@ -87,7 +119,7 @@ const routes = [
     },
     {
         method: 'POST',
-        path: '/stories/{storyId}/comment',
+        path: '/story/{storyId}/comment',
         options: {
             auth: 'jwt',
             handler: commentStoryHandler
@@ -95,7 +127,7 @@ const routes = [
     },
     {
         method: 'POST',
-        path: '/comments/{commentId}/reply',
+        path: '/comment/{commentId}/reply',
         options: {
             auth: 'jwt',
             handler: replyCommentHandler
@@ -103,7 +135,7 @@ const routes = [
     },
         {
         method: 'POST',
-        path: '/comments/{commentId}/like',
+        path: '/comment/{commentId}/like',
         options: {
             auth: 'jwt',
             handler: likeCommentHandler
@@ -111,16 +143,11 @@ const routes = [
     },
     {
         method: 'DELETE',
-        path: '/comments/{commentId}',
+        path: '/comment/{commentId}',
         options: {
             auth: 'jwt',
             handler: deleteCommentHandler
         }
-    },
-    {
-        method: 'GET',
-        path: '/stories/{storyId}',
-        handler: getStoryDetailHandler
     }
 ];
 
