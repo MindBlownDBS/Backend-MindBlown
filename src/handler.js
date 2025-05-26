@@ -531,9 +531,9 @@ const deleteStoryHandler = async (request, h) => {
         }
 
         if (!story.isAnonymous) {
-            await users.findByIdAndUpdate(
-                userId,
-                { $pull: { stories: { _id: storyId } } }
+            await users.updateOne(
+                { _id: userId },
+                { $pull: { stories: { _id: story._id } } }
             );
         }
 
