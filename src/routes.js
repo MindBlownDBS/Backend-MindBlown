@@ -148,6 +148,32 @@ const routes = [
             auth: 'jwt',
             handler: deleteCommentHandler
         }
+    },
+    {
+        method: 'GET',
+        path: '/notifications',
+        handler: handlers.getNotificationsHandler,
+        options: {
+            auth: 'jwt'
+        }
+    },
+
+    {
+        method: 'PUT',
+        path: '/notifications/{notificationId}',
+        handler: handlers.markNotificationReadHandler,
+        options: {
+            auth: 'jwt'
+        }
+    },
+
+    {
+        method: 'PUT',
+        path: '/notifications',
+        handler: handlers.markAllNotificationsReadHandler,
+        options: {
+            auth: 'jwt'
+        }
     }
 ];
 
