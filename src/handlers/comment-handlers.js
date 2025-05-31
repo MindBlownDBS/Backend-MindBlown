@@ -5,6 +5,14 @@ const { deleteAllReplies } = require('../utils/comment-helpers');
 const commentStoryHandler = async (request, h) => {
     try {
         const { storyId } = request.params;
+
+        if (!storyId || storyId === 'undefined') {
+            return h.response({
+                error: true,
+                message: 'ID story tidak valid'
+            }).code(400);
+        }
+        
         const { content } = request.payload;
         const user = request.auth.credentials;
 

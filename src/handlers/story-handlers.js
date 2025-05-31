@@ -251,6 +251,13 @@ const getStoryDetailHandler = async (request, h) => {
     try {
         const { storyId } = request.params;
 
+        if (!storyId || storyId === 'undefined') {
+            return h.response({
+                error: true,
+                message: 'ID story tidak valid'
+            }).code(400);
+        }
+
         const story = await Story.findById(storyId)
             .lean();
         
