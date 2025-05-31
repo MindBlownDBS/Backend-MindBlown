@@ -15,7 +15,11 @@ const {
     replyCommentHandler,
     likeCommentHandler, 
     deleteCommentHandler,
-    getStoryDetailHandler
+    getStoryDetailHandler,
+    getNotificationsHandler,
+    markNotificationReadHandler,
+    markAllNotificationsReadHandler,
+    triggerMindTrackerRemindersHandler
 } = require("./handler");
 
 const routes = [
@@ -152,25 +156,31 @@ const routes = [
     {
         method: 'GET',
         path: '/notifications',
-        handler: handlers.getNotificationsHandler,
+        handler: getNotificationsHandler,
         options: {
             auth: 'jwt'
         }
     },
-
     {
         method: 'PUT',
         path: '/notifications/{notificationId}',
-        handler: handlers.markNotificationReadHandler,
+        handler: markNotificationReadHandler,
         options: {
             auth: 'jwt'
         }
     },
-
     {
         method: 'PUT',
         path: '/notifications',
-        handler: handlers.markAllNotificationsReadHandler,
+        handler: markAllNotificationsReadHandler,
+        options: {
+            auth: 'jwt'
+        }
+    },
+    {
+        method: 'POST',
+        path: '/admin/trigger-mindtracker-reminders',
+        handler: triggerMindTrackerRemindersHandler,
         options: {
             auth: 'jwt'
         }

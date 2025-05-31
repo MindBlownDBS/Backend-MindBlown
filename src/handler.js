@@ -5,6 +5,7 @@ const mindTracker = require('./models/mindTracker');
 const { Story, Comment } = require('./models/story');
 const Notification = require('./models/notification');
 const { key, algorithm } = require('./config/jwt');
+const { sendMindTrackerReminders } = require('./services/scheduler');
 
 const registerHandler = async (request, h) => {
     try {
@@ -1068,6 +1069,34 @@ const markAllNotificationsReadHandler = async (request, h) => {
     }
 };
 
+const triggerMindTrackerRemindersHandler = async (request, h) => {
+    try {
+        // Only allow administrators to trigger this (you'll need to implement admin role check)
+        const user = request.auth.credentials;
+        
+        // Optional: Add admin check here
+        // if (!user.isAdmin) {
+        //     return h.response({
+        //         error: true,
+        //         message: 'Unauthorized'
+        //     }).code(403);
+        // }
+        
+        await sendMindTrackerReminders();
+        
+        return h.response({
+            error: false,
+            message: 'Mind tracker reminders triggered successfully'
+        }).code(200);
+    } catch (error) {
+        console.error('Error triggerMindTrackerRemindersHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
 module.exports = { 
     registerHandler, 
     loginHandler, 
@@ -1088,5 +1117,6 @@ module.exports = {
     getStoryDetailHandler,
     getNotificationsHandler,
     markNotificationReadHandler,
-    markAllNotificationsReadHandler
+    markAllNotificationsReadHandler,
+    triggerMindTrackerRemindersHandler 
 };

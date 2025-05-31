@@ -3,6 +3,7 @@ const JWT = require('@hapi/jwt');
 const routes = require('./routes');
 const connectDB = require('./db');
 const { jwtStrategy } = require('./auth/auth');
+const { initScheduler } = require('./services/scheduler');
 
 const init = async () => {
     await connectDB();
@@ -19,6 +20,8 @@ const init = async () => {
     await server.register(JWT);
     server.auth.strategy('jwt', jwtStrategy.scheme, jwtStrategy.options);
     server.auth.default('jwt');
+
+    initScheduler();
     
     server.route(routes);
 
