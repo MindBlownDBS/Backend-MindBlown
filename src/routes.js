@@ -20,7 +20,7 @@ const {
     markNotificationReadHandler,
     markAllNotificationsReadHandler,
     triggerMindTrackerRemindersHandler
-} = require("./handler");
+} = require("./handlers/handler");
 
 const routes = [
     {
@@ -42,22 +42,22 @@ const routes = [
     {
         method: 'GET',
         path: '/profile/{username}',
+        handler: getUserProfileHandler,
         options: {
             auth: 'jwt',
-            handler: getUserProfileHandler
         }
     },
     {
         method: 'PUT',
         path: '/profile',
+        handler: editProfileHandler,
         options: {
             auth: 'jwt',
-            handler: editProfileHandler
         }
     },
     {
         method: 'POST',
-        path: '/mindTracker',
+        path: '/mind-tracker',
         handler: mindTrackerHandler,
         options: {
             auth: 'jwt',
@@ -65,7 +65,7 @@ const routes = [
     },
     {
         method: 'GET',
-        path: '/mindTracker/check/{date}',
+        path: '/mind-tracker/check/{date}',
         handler: checkMindTrackerHandler,
         options: {
             auth: 'jwt',
@@ -73,7 +73,7 @@ const routes = [
     },
     {
         method: 'GET',
-        path: '/mindTracker/{date}',
+        path: '/mind-tracker/{date}',
         handler: getMindTrackerHandler,
         options: {
             auth: 'jwt',
@@ -81,76 +81,82 @@ const routes = [
     },
     {
         method: 'POST',
-        path: '/story',
+        path: '/stories',
+        handler: createStoryHandler,
         options: {
             auth: 'jwt',
-            handler: createStoryHandler
         }
     },
     {
         method: 'PUT',
-        path: '/story/{storyId}',
+        path: '/stories/{storyId}',
+        handler: editStoryHandler,
         options: {
             auth: 'jwt',
-            handler: editStoryHandler
         }
     },
     {
         method: 'DELETE',
-        path: '/story/{storyId}',
+        path: '/stories/{storyId}',
+        handler: deleteStoryHandler,
         options: {
             auth: 'jwt',
-            handler: deleteStoryHandler
         }
     },
     {
         method: 'GET',
-        path: '/story',
-        handler: getStoriesHandler
+        path: '/stories',
+        handler: getStoriesHandler,
+        options: {
+            auth: false,
+        }
     },
     {
         method: 'GET',
-        path: '/story/{storyId}',
-        handler: getStoryDetailHandler
-    },
-    {
-        method: 'POST',
-        path: '/story/{storyId}/like',
+        path: '/stories/{storyId}',
+        handler: getStoryDetailHandler,
         options: {
-            auth: 'jwt',
-            handler: likeStoryHandler
+            auth: false,
         }
     },
     {
         method: 'POST',
-        path: '/story/{storyId}/comment',
+        path: '/stories/{storyId}/likes',
+        handler: likeStoryHandler,
         options: {
             auth: 'jwt',
-            handler: commentStoryHandler
         }
     },
     {
         method: 'POST',
-        path: '/comment/{commentId}/reply',
+        path: '/stories/{storyId}/comments',
+        handler: commentStoryHandler,
         options: {
             auth: 'jwt',
-            handler: replyCommentHandler
+        }
+    },
+    {
+        method: 'POST',
+        path: '/comments/{commentId}/replies',
+        handler: replyCommentHandler,
+        options: {
+            auth: 'jwt',
         }
     },
         {
         method: 'POST',
-        path: '/comment/{commentId}/like',
+        path: '/comments/{commentId}/likes',
+        handler: likeCommentHandler,
         options: {
             auth: 'jwt',
-            handler: likeCommentHandler
         }
     },
     {
         method: 'DELETE',
-        path: '/comment/{commentId}',
+        path: '/comments/{commentId}',
+        handler: deleteCommentHandler,
         options: {
             auth: 'jwt',
-            handler: deleteCommentHandler
         }
     },
     {

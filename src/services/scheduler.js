@@ -1,6 +1,6 @@
 const schedule = require('node-schedule');
 const users = require('../models/user');
-const mindTracker = require('../models/mindTracker');
+const mindTracker = require('../models/mind-tracker');
 const Notification = require('../models/notification');
 
 const hasSubmittedMindTracker = async (userId) => {
