@@ -169,7 +169,7 @@ const routes = [
     },
     {
         method: 'PUT',
-        path: '/notifications/{notificationId}',
+        path: '/notifications/{notificationId}/read',
         handler: markNotificationReadHandler,
         options: {
             auth: 'jwt'
