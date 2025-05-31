@@ -692,6 +692,7 @@ const commentStoryHandler = async (request, h) => {
                 fromUserId: user.id,
                 fromUsername: user.username,
                 type: 'comment',
+                message: `${user.username} berkomentar di story-mu.`,
                 storyId: story._id,
                 commentId: comment._id
             });
@@ -763,6 +764,7 @@ const replyCommentHandler = async (request, h) => {
                 fromUserId: user.id,
                 fromUsername: user.username,
                 type: 'reply',
+                message: `${user.username} membalas komentarmu.`,
                 storyId: story ? story._id : null,
                 commentId: reply._id
             });
