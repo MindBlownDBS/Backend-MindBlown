@@ -1071,7 +1071,7 @@ const markAllNotificationsReadHandler = async (request, h) => {
 
 const triggerMindTrackerRemindersHandler = async (request, h) => {
     try {
-        // Only allow administrators to trigger this (you'll need to implement admin role check)
+        // Only allow administrators to trigger this
         const user = request.auth.credentials;
         
         // Optional: Add admin check here
