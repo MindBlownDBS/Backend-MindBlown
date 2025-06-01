@@ -51,7 +51,7 @@ const sendMindTrackerReminders = async () => {
 
 const initScheduler = () => {
     const rule = new schedule.RecurrenceRule();
-    rule.hour = 10;
+    rule.hour = [6, 12, 18, 23];
     rule.minute = 0;
     
     const job = schedule.scheduleJob(rule, sendMindTrackerReminders);
