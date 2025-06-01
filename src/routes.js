@@ -177,7 +177,7 @@ const routes = [
     },
     {
         method: 'PUT',
-        path: '/notifications',
+        path: '/notifications/read-all',
         handler: markAllNotificationsReadHandler,
         options: {
             auth: 'jwt'
