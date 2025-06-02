@@ -258,8 +258,11 @@ const getStoryDetailHandler = async (request, h) => {
             }).code(400);
         }
 
-        const story = await Story.findById(storyId)
-            .lean();
+        const story = await Story.findByIdAndUpdate(
+            storyId,
+            { $inc: { viewCount: 1 } },
+            { new: true }
+        ).lean();
         
         if (!story) {
             return h.response({

@@ -8,6 +8,7 @@ const commentSchema = new mongoose.Schema({
     parentCommentId: { type: mongoose.Schema.Types.ObjectId, default: null },
     replies: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    viewCount: { type: Number },
     createdAt: { type: Date, default: Date.now }
 });
 
@@ -19,10 +20,11 @@ const storySchema = new mongoose.Schema({
     isAnonymous: { type: Boolean, default: false },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     comments: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' }],
+    viewCount: { type: Number },
     createdAt: { type: Date, default: Date.now },
 }, { 
     timestamps: true,
-    collection: 'Story'
+    collection: 'story'
 });
 
 module.exports = {
