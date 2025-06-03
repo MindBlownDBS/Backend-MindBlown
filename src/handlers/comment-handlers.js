@@ -62,11 +62,6 @@ const commentStoryHandler = async (request, h) => {
                 story.userId,
                 'Komentar Baru',
                 `${user.username} berkomentar di story-mu.`,
-                {
-                    type: 'comment',
-                    storyId: story._id.toString(),
-                    commentId: comment._id.toString()
-                }
             );
         }
 
@@ -146,11 +141,6 @@ const replyCommentHandler = async (request, h) => {
                 parentComment.userId,
                 'Balasan Baru',
                 `${user.username} membalas komentarmu.`,
-                {
-                    type: 'reply',
-                    storyId: story ? story._id.toString() : null,
-                    commentId: reply._id.toString()
-                }
             );
         }
         

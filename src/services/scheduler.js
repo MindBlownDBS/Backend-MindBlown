@@ -46,10 +46,6 @@ const sendMindTrackerReminders = async () => {
                     user._id,
                     'MindTracker Reminder',
                     'Hai, Kamu belum mengisi Daily Mind Tracker-mu',
-                    {
-                        type: 'reminder',
-                        action: 'mindtracker'
-                    }
                 );
                 
                 console.log(`Reminder notification sent to user: ${user.username}`);

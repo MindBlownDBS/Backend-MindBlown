@@ -20,7 +20,6 @@ const sendPushNotification = async (userId, title, body, data = {}) => {
         const payload = JSON.stringify({
             title,
             body,
-            data,
             // icon: '/icon-192x192.png',
             // badge: '/badge-72x72.png'
         });
