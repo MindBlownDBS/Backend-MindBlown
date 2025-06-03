@@ -44,7 +44,7 @@ const sendMindTrackerReminders = async () => {
                 // Send push notification
                 await sendPushNotification(
                     user._id,
-                    'MindTracker Reminder',
+                    'Mind Tracker Reminder',
                     'Hai, Kamu belum mengisi Daily Mind Tracker-mu',
                 );
                 

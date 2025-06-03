@@ -11,9 +11,16 @@ const sendPushNotification = async (userId, title, body, data = {}) => {
     try {
         const User = require('../models/user');
         const user = await User.findById(userId);
-        
+                
         if (!user || !user.pushSubscription) {
             console.log('No push subscription found for user:', userId);
+            return;
+        }
+
+        // Validate subscription format
+        const subscription = user.pushSubscription;
+        if (!subscription.endpoint || !subscription.keys) {
+            console.log('Invalid subscription format for user:', userId);
             return;
         }
 
@@ -25,15 +32,17 @@ const sendPushNotification = async (userId, title, body, data = {}) => {
         });
 
         const response = await webpush.sendNotification(
-            user.pushSubscription,
+            subscription, // Pass the full subscription object
             payload
         );
         
-        console.log('Push notification sent:', response);
+        // console.log('Push notification sent:', response);
         return response;
     } catch (error) {
         console.error('Error sending push notification:', error);
-        if (error.statusCode === 410) {
+        
+        if (error.statusCode === 410 || error.statusCode === 404) {
+            // Remove invalid subscription
             const User = require('../models/user');
             await User.findByIdAndUpdate(userId, { 
                 $unset: { pushSubscription: 1 } 
@@ -47,11 +56,28 @@ const subscribePushHandler = async (request, h) => {
         const userId = request.auth.credentials.id;
         const { subscription } = request.payload;
         
+        if (!subscription || !subscription.endpoint || !subscription.keys) {
+            return h.response({
+                error: true,
+                message: 'Format subscription tidak valid'
+            }).code(400);
+        }
+        
+        let endpoint = subscription.endpoint;
+
+        const validatedSubscription = {
+            endpoint: endpoint,
+            keys: {
+                p256dh: subscription.keys.p256dh,
+                auth: subscription.keys.auth
+            }
+        };
+        
         const User = require('../models/user');
         await User.findByIdAndUpdate(userId, { 
-            pushSubscription: subscription 
+            pushSubscription: validatedSubscription 
         });
-        
+                
         return h.response({
             error: false,
             message: 'Push subscription berhasil disimpan'
