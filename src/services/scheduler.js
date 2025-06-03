@@ -2,6 +2,7 @@ const schedule = require('node-schedule');
 const users = require('../models/user');
 const mindTracker = require('../models/mind-tracker');
 const Notification = require('../models/notification');
+const { sendPushNotification } = require('../handlers/notification-handlers');
 
 const hasSubmittedMindTracker = async (userId) => {
     const today = new Date();
@@ -39,6 +40,18 @@ const sendMindTrackerReminders = async () => {
                 });
                 
                 await notification.save();
+                
+                // Send push notification
+                await sendPushNotification(
+                    user._id,
+                    'MindTracker Reminder',
+                    'Hai, Kamu belum mengisi Daily Mind Tracker-mu',
+                    {
+                        type: 'reminder',
+                        action: 'mindtracker'
+                    }
+                );
+                
                 console.log(`Reminder notification sent to user: ${user.username}`);
             }
         }

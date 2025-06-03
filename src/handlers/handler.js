@@ -29,6 +29,9 @@ module.exports = {
     deleteCommentHandler: commentHandlers.deleteCommentHandler,
     
     // Notification handlers
+    sendPushNotification: notificationHandlers.sendPushNotification,
+    subscribePushHandler: notificationHandlers.subscribePushHandler,
+    unsubscribePushHandler: notificationHandlers.unsubscribePushHandler,
     getNotificationsHandler: notificationHandlers.getNotificationsHandler,
     markNotificationReadHandler: notificationHandlers.markNotificationReadHandler,
     markAllNotificationsReadHandler: notificationHandlers.markAllNotificationsReadHandler,

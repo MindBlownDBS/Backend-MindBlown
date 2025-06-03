@@ -16,6 +16,8 @@ const {
     likeCommentHandler, 
     deleteCommentHandler,
     getStoryDetailHandler,
+    subscribePushHandler,
+    unsubscribePushHandler,
     getNotificationsHandler,
     markNotificationReadHandler,
     markAllNotificationsReadHandler,
@@ -157,6 +159,22 @@ const routes = [
         handler: deleteCommentHandler,
         options: {
             auth: 'jwt',
+        }
+    },
+    {
+        method: 'POST',
+        path: '/notifications/push/subscribe',
+        handler: subscribePushHandler,
+        options: {
+            auth: 'jwt'
+        }
+    },
+    {
+        method: 'DELETE',
+        path: '/notifications/push/unsubscribe',
+        handler: unsubscribePushHandler,
+        options: {
+            auth: 'jwt'
         }
     },
     {

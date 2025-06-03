@@ -1,6 +1,7 @@
 const { Story, Comment } = require('../models/story');
 const Notification = require('../models/notification');
 const { deleteAllReplies } = require('../utils/comment-helpers');
+const { sendPushNotification } = require('./notification-handlers');
 
 const commentStoryHandler = async (request, h) => {
     try {
@@ -55,6 +56,18 @@ const commentStoryHandler = async (request, h) => {
                 commentId: comment._id
             });
             await notification.save();
+
+            // Send push notification
+            await sendPushNotification(
+                story.userId,
+                'Komentar Baru',
+                `${user.username} berkomentar di story-mu.`,
+                {
+                    type: 'comment',
+                    storyId: story._id.toString(),
+                    commentId: comment._id.toString()
+                }
+            );
         }
 
         return h.response({
@@ -127,6 +140,18 @@ const replyCommentHandler = async (request, h) => {
                 commentId: reply._id
             });
             await notification.save();
+
+            // Send push notification
+            await sendPushNotification(
+                parentComment.userId,
+                'Balasan Baru',
+                `${user.username} membalas komentarmu.`,
+                {
+                    type: 'reply',
+                    storyId: story ? story._id.toString() : null,
+                    commentId: reply._id.toString()
+                }
+            );
         }
         
         return h.response({

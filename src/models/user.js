@@ -27,7 +27,11 @@ const userSchema = new mongoose.Schema({
         caption: { type: String },
         createdAt: { type: Date, default: Date.now },
         expiresAt: { type: Date }
-    }]
+    }],
+    pushSubscription: { 
+        type: Object, 
+        default: null 
+    }
 }, { 
     timestamps: true,
     collection: 'user'
