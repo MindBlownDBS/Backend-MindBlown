@@ -27,9 +27,6 @@ const commentSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: 'User' 
     }],
-    viewCount: { 
-        type: Number 
-    },
     createdAt: { 
         type: Date, 
         default: Date.now 
@@ -66,6 +63,10 @@ const storySchema = new mongoose.Schema({
     viewCount: { 
         type: Number 
     },
+    viewedBy: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     createdAt: { 
         type: Date, default: Date.now 
     },

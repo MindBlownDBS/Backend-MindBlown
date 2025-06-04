@@ -158,6 +158,82 @@ const replyCommentHandler = async (request, h) => {
     }
 };
 
+const getCommentDetailHandler = async (request, h) => {
+    try {
+        const { commentId } = request.params;
+
+        if (!commentId || commentId === 'undefined') {
+            return h.response({
+                error: true,
+                message: 'ID komentar tidak valid'
+            }).code(400);
+        }
+
+        const comment = await Comment.findById(commentId).populate({
+            path: 'replies',
+            options: { sort: { createdAt: 1 } }
+        });
+
+        if (!comment) {
+            return h.response({
+                error: true,
+                message: 'Komentar tidak ditemukan'
+            }).code(404);
+        }
+
+        // Find the story this comment belongs to
+        let story = null;
+        if (comment.parentCommentId) {
+            // This is a reply, find the original comment's story
+            const originalComment = await Comment.findById(comment.parentCommentId);
+            if (originalComment) {
+                story = await Story.findOne({ comments: originalComment._id });
+            }
+        } else {
+            // This is a main comment
+            story = await Story.findOne({ comments: commentId });
+        }
+
+        const commentDetail = {
+            _id: comment._id,
+            userId: comment.userId,
+            username: comment.username,
+            name: comment.name,
+            content: comment.content,
+            likeCount: comment.likes.length,
+            replies: comment.replies.map(reply => ({
+                _id: reply._id,
+                userId: reply.userId,
+                username: reply.username,
+                name: reply.name,
+                content: reply.content,
+                likes: reply.likes,
+                likeCount: reply.likes.length,
+                createdAt: reply.createdAt,
+                updatedAt: reply.updatedAt
+            })),
+            replyCount: comment.replies.length,
+            parentCommentId: comment.parentCommentId,
+            storyId: story ? story._id : null,
+            storyTitle: story ? story.title : null,
+            createdAt: comment.createdAt,
+            updatedAt: comment.updatedAt
+        };
+
+        return h.response({
+            error: false,
+            message: 'Detail komentar berhasil diambil',
+            data: commentDetail
+        }).code(200);
+    } catch (error) {
+        console.error('Error getCommentDetailHandler:', error);
+        return h.response({
+            error: true,
+            message: 'Terjadi kesalahan server'
+        }).code(500);
+    }
+};
+
 const likeCommentHandler = async (request, h) => {
     try {
         const { commentId } = request.params;
@@ -245,6 +321,7 @@ const deleteCommentHandler = async (request, h) => {
 module.exports = {
     commentStoryHandler,
     replyCommentHandler,
+    getCommentDetailHandler,
     likeCommentHandler,
     deleteCommentHandler
 };

@@ -168,23 +168,8 @@ const getStoriesHandler = async (request, h) => {
             commentReplyCounts[comment._id] = replyCount;
         }));
         
-        const formattedComments = directComments.map(comment => ({
-            ...comment,
-            likeCount: comment.likes.length,
-            replyCount: commentReplyCounts[comment._id] || 0
-        }));
-        
-        const commentMap = {};
-        formattedComments.forEach(comment => {
-            commentMap[comment._id.toString()] = comment;
-        });
-        
         const formattedStories = stories.map(story => {
             let totalCommentCount = story.comments.length;
-            
-            const storyComments = story.comments.map(commentId => 
-                commentMap[commentId.toString()]
-            ).filter(Boolean);
             
             story.comments.forEach(commentId => {
                 totalCommentCount += (commentReplyCounts[commentId] || 0);
@@ -194,8 +179,7 @@ const getStoriesHandler = async (request, h) => {
                 ...story,
                 likeCount: story.likes.length,
                 commentCount: story.comments.length,
-                totalCommentCount: totalCommentCount,
-                comments: storyComments
+                totalCommentCount: totalCommentCount
             };
         });
 
@@ -250,6 +234,16 @@ const likeStoryHandler = async (request, h) => {
 const getStoryDetailHandler = async (request, h) => {
     try {
         const { storyId } = request.params;
+        
+        // Check if user is authenticated
+        if (!request.auth.credentials || !request.auth.credentials.id) {
+            return h.response({
+                error: true,
+                message: 'Unauthorized - Authentication required'
+            }).code(401);
+        }
+        
+        const userId = request.auth.credentials.id;
 
         if (!storyId || storyId === 'undefined') {
             return h.response({
@@ -258,17 +252,28 @@ const getStoryDetailHandler = async (request, h) => {
             }).code(400);
         }
 
-        const story = await Story.findByIdAndUpdate(
-            storyId,
-            { $inc: { viewCount: 1 } },
-            { new: true }
-        ).lean();
+        let story = await Story.findById(storyId).lean();
         
         if (!story) {
             return h.response({
                 error: true,
                 message: 'Story tidak ditemukan'
             }).code(404);
+        }
+        
+        // Check if user has already viewed this story
+        const hasViewed = story.viewedBy && story.viewedBy.some(viewerId => viewerId.toString() === userId);
+        
+        // Only increment view count if user hasn't viewed before
+        if (!hasViewed) {
+            story = await Story.findByIdAndUpdate(
+                storyId,
+                { 
+                    $inc: { viewCount: 1 },
+                    $addToSet: { viewedBy: userId }
+                },
+                { new: true }
+            ).lean();
         }
 
         const comments = await Comment.find({

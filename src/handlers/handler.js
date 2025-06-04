@@ -25,6 +25,7 @@ module.exports = {
     // Comment handlers
     commentStoryHandler: commentHandlers.commentStoryHandler,
     replyCommentHandler: commentHandlers.replyCommentHandler,
+    getCommentDetailHandler: commentHandlers.getCommentDetailHandler,
     likeCommentHandler: commentHandlers.likeCommentHandler,
     deleteCommentHandler: commentHandlers.deleteCommentHandler,
     

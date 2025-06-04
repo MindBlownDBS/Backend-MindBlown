@@ -13,6 +13,7 @@ const {
     likeStoryHandler, 
     commentStoryHandler,
     replyCommentHandler,
+    getCommentDetailHandler,
     likeCommentHandler, 
     deleteCommentHandler,
     getStoryDetailHandler,
@@ -110,7 +111,7 @@ const routes = [
         path: '/stories',
         handler: getStoriesHandler,
         options: {
-            auth: false,
+            auth: 'jwt',
         }
     },
     {
@@ -118,7 +119,7 @@ const routes = [
         path: '/stories/{storyId}',
         handler: getStoryDetailHandler,
         options: {
-            auth: false,
+            auth: 'jwt',
         }
     },
     {
@@ -145,7 +146,15 @@ const routes = [
             auth: 'jwt',
         }
     },
-        {
+    {
+        method: 'GET',
+        path: '/comments/{commentId}',
+        handler: getCommentDetailHandler,
+        options: {
+            auth: 'jwt'
+        }
+    },
+    {
         method: 'POST',
         path: '/comments/{commentId}/likes',
         handler: likeCommentHandler,
