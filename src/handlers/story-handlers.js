@@ -153,33 +153,57 @@ const getStoriesHandler = async (request, h) => {
     try {
         const stories = await Story.find({})
             .sort({ createdAt: -1 })
+            .select('-likes -comments -viewedBy')
             .lean();
 
-        const allCommentIds = stories.flatMap(story => story.comments);
+        const allStoryIds = stories.map(story => story._id);
         
-        const directComments = await Comment.find({
-            _id: { $in: allCommentIds }
-        }).lean();
-        
-        const commentReplyCounts = {};
-        
-        await Promise.all(directComments.map(async (comment) => {
-            const replyCount = await countAllReplies(comment._id);
-            commentReplyCounts[comment._id] = replyCount;
-        }));
-        
+        const commentCounts = await Promise.all(
+            allStoryIds.map(async (storyId) => {
+                const storyWithComments = await Story.findById(storyId).select('comments').lean();
+                const directCommentCount = storyWithComments.comments.length;
+                
+                let totalReplyCount = 0;
+                for (const commentId of storyWithComments.comments) {
+                    totalReplyCount += await countAllReplies(commentId);
+                }
+                
+                return {
+                    storyId: storyId.toString(),
+                    commentCount: directCommentCount,
+                    totalCommentCount: directCommentCount + totalReplyCount
+                };
+            })
+        );
+
+        const likeCounts = await Story.aggregate([
+            { $match: { _id: { $in: allStoryIds } } },
+            { $project: { _id: 1, likeCount: { $size: '$likes' } } }
+        ]);
+
+        const commentCountMap = {};
+        commentCounts.forEach(item => {
+            commentCountMap[item.storyId] = {
+                commentCount: item.commentCount,
+                totalCommentCount: item.totalCommentCount
+            };
+        });
+
+        const likeCountMap = {};
+        likeCounts.forEach(item => {
+            likeCountMap[item._id.toString()] = item.likeCount;
+        });
+
         const formattedStories = stories.map(story => {
-            let totalCommentCount = story.comments.length;
-            
-            story.comments.forEach(commentId => {
-                totalCommentCount += (commentReplyCounts[commentId] || 0);
-            });
+            const storyId = story._id.toString();
+            const commentData = commentCountMap[storyId] || { commentCount: 0, totalCommentCount: 0 };
+            const likeCount = likeCountMap[storyId] || 0;
             
             return {
                 ...story,
-                likeCount: story.likes.length,
-                commentCount: story.comments.length,
-                totalCommentCount: totalCommentCount
+                likeCount: likeCount,
+                commentCount: commentData.commentCount,
+                totalCommentCount: commentData.totalCommentCount
             };
         });
 
@@ -252,7 +276,9 @@ const getStoryDetailHandler = async (request, h) => {
             }).code(400);
         }
 
-        let story = await Story.findById(storyId).lean();
+        let story = await Story.findById(storyId)
+            .select('-likes -viewedBy')
+            .lean();
         
         if (!story) {
             return h.response({
@@ -261,19 +287,24 @@ const getStoryDetailHandler = async (request, h) => {
             }).code(404);
         }
         
+        // Get the full story data for view tracking and like counting
+        const fullStory = await Story.findById(storyId)
+            .select('likes viewedBy viewCount')
+            .lean();
+        
         // Check if user has already viewed this story
-        const hasViewed = story.viewedBy && story.viewedBy.some(viewerId => viewerId.toString() === userId);
+        const hasViewed = fullStory.viewedBy && fullStory.viewedBy.some(viewerId => viewerId.toString() === userId);
         
         // Only increment view count if user hasn't viewed before
         if (!hasViewed) {
-            story = await Story.findByIdAndUpdate(
+            await Story.findByIdAndUpdate(
                 storyId,
                 { 
                     $inc: { viewCount: 1 },
                     $addToSet: { viewedBy: userId }
-                },
-                { new: true }
-            ).lean();
+                }
+            );
+            story.viewCount = (story.viewCount || 0) + 1;
         }
 
         const comments = await Comment.find({
@@ -345,7 +376,7 @@ const getStoryDetailHandler = async (request, h) => {
 
         const detail = {
             ...story,
-            likeCount: story.likes.length,
+            likeCount: fullStory.likes.length,
             commentCount: story.comments.length,
             totalCommentCount: totalCommentCount
         };
