@@ -169,8 +169,21 @@ const getCommentDetailHandler = async (request, h) => {
             }).code(400);
         }
 
+        // Recursive population of replies
         const comment = await Comment.findById(commentId).populate({
             path: 'replies',
+            populate: {
+                path: 'replies',
+                populate: {
+                    path: 'replies',
+                    populate: {
+                        path: 'replies',
+                        options: { sort: { createdAt: 1 } }
+                    },
+                    options: { sort: { createdAt: 1 } }
+                },
+                options: { sort: { createdAt: 1 } }
+            },
             options: { sort: { createdAt: 1 } }
         });
 
@@ -194,30 +207,39 @@ const getCommentDetailHandler = async (request, h) => {
             story = await Story.findOne({ comments: commentId });
         }
 
+        // Helper function to format replies recursively
+        const formatReplies = (replies) => {
+            return replies.map(reply => ({
+                _id: reply._id,
+                userId: reply.userId,
+                username: reply.username,
+                name: reply.name,
+                content: reply.content,
+                parentCommentId: reply.parentCommentId,
+                replies: formatReplies(reply.replies || []),
+                createdAt: reply.createdAt,
+                updatedAt: reply.updatedAt,
+                __v: reply.__v,
+                repliesCount: reply.replies ? reply.replies.length : 0,
+                likeCount: reply.likes ? reply.likes.length : 0
+            }));
+        };
+
         const commentDetail = {
             _id: comment._id,
             userId: comment.userId,
             username: comment.username,
             name: comment.name,
             content: comment.content,
-            likeCount: comment.likes.length,
-            replies: comment.replies.map(reply => ({
-                _id: reply._id,
-                userId: reply.userId,
-                username: reply.username,
-                name: reply.name,
-                content: reply.content,
-                likes: reply.likes,
-                likeCount: reply.likes.length,
-                createdAt: reply.createdAt,
-                updatedAt: reply.updatedAt
-            })),
-            replyCount: comment.replies.length,
             parentCommentId: comment.parentCommentId,
-            storyId: story ? story._id : null,
-            storyTitle: story ? story.title : null,
+            replies: formatReplies(comment.replies || []),
             createdAt: comment.createdAt,
-            updatedAt: comment.updatedAt
+            updatedAt: comment.updatedAt,
+            __v: comment.__v,
+            repliesCount: comment.replies ? comment.replies.length : 0,
+            likeCount: comment.likes ? comment.likes.length : 0,
+            storyId: story ? story._id : null,
+            storyTitle: story ? story.title : null
         };
 
         return h.response({

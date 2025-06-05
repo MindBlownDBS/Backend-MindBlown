@@ -290,7 +290,8 @@ const getStoryDetailHandler = async (request, h) => {
         // Get the full story data for view tracking and like counting
         const fullStory = await Story.findById(storyId)
             .select('likes viewedBy viewCount')
-            .lean();
+            .lean()
+        ;
         
         // Check if user has already viewed this story
         const hasViewed = fullStory.viewedBy && fullStory.viewedBy.some(viewerId => viewerId.toString() === userId);
@@ -345,11 +346,25 @@ const getStoryDetailHandler = async (request, h) => {
         const allReplies = [...relevantReplies, ...nestedReplies];
         
         comments.forEach(comment => {
+            comment.repliesCount = 0;
+            allReplies.forEach(reply => {
+                if (reply.parentCommentId && reply.parentCommentId.toString() === comment._id.toString()) {
+                    comment.repliesCount++;
+                }
+            });
             comment.likeCount = comment.likes ? comment.likes.length : 0;
+            delete comment.likes;
         });
         
         allReplies.forEach(reply => {
+            reply.repliesCount = 0;
+            allReplies.forEach(nestedReply => {
+                if (nestedReply.parentCommentId && nestedReply.parentCommentId.toString() === reply._id.toString()) {
+                    reply.repliesCount++;
+                }
+            });
             reply.likeCount = reply.likes ? reply.likes.length : 0;
+            delete reply.likes;
         });
         
         const commentMap = {};
