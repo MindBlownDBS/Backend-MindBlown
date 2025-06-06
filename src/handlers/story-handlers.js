@@ -153,7 +153,7 @@ const getStoriesHandler = async (request, h) => {
     try {
         const stories = await Story.find({})
             .sort({ createdAt: -1 })
-            .select('-likes -comments -viewedBy')
+            .select(' -comments -viewedBy')
             .lean();
 
         const allStoryIds = stories.map(story => story._id);
@@ -304,7 +304,7 @@ const getStoryDetailHandler = async (request, h) => {
         }
 
         let story = await Story.findById(storyId)
-            .select('-likes -viewedBy')
+            .select('-viewedBy')
             .lean();
         
         if (!story) {
