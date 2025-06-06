@@ -172,20 +172,29 @@ const getCommentDetailHandler = async (request, h) => {
         // Recursive population of replies
         const comment = await Comment.findById(commentId).populate({
             path: 'replies',
-            populate: {
-                path: 'replies',
-                populate: {
-                    path: 'replies',
-                    populate: {
-                        path: 'replies',
-                        options: { sort: { createdAt: 1 } }
-                    },
-                    options: { sort: { createdAt: 1 } }
+            populate: [
+                {
+                    path: 'userId',
+                    select: 'profilePicture'
                 },
-                options: { sort: { createdAt: 1 } }
-            },
+                {
+                    path: 'replies',
+                    populate: [
+                        {
+                            path: 'userId',
+                            select: 'profilePicture'
+                        },
+                        {
+                            path: 'replies',
+                            populate: [],
+                            options: { sort: { createdAt: 1 } }
+                        }
+                    ],
+                    options: { sort: { createdAt: 1 } }
+                }
+            ],
             options: { sort: { createdAt: 1 } }
-        });
+        }).populate('userId', 'profilePicture');
 
         if (!comment) {
             return h.response({
@@ -211,11 +220,12 @@ const getCommentDetailHandler = async (request, h) => {
         const formatReplies = (replies) => {
             return replies.map(reply => ({
                 _id: reply._id,
-                userId: reply.userId,
+                userId: reply.userId._id || reply.userId,
                 username: reply.username,
                 name: reply.name,
                 content: reply.content,
                 parentCommentId: reply.parentCommentId,
+                profilePicture: reply.userId.profilePicture || null,
                 replies: formatReplies(reply.replies || []),
                 createdAt: reply.createdAt,
                 updatedAt: reply.updatedAt,
@@ -227,11 +237,12 @@ const getCommentDetailHandler = async (request, h) => {
 
         const commentDetail = {
             _id: comment._id,
-            userId: comment.userId,
+            userId: comment.userId._id || comment.userId,
             username: comment.username,
             name: comment.name,
             content: comment.content,
             parentCommentId: comment.parentCommentId,
+            profilePicture: comment.userId.profilePicture || null,
             replies: formatReplies(comment.replies || []),
             createdAt: comment.createdAt,
             updatedAt: comment.updatedAt,
