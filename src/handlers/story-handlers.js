@@ -233,18 +233,45 @@ const likeStoryHandler = async (request, h) => {
             }).code(404);
         }
 
-        const index = story.likes.indexOf(userId);
-        if (index === -1) {
-            story.likes.push(userId);
+        story.likes = story.likes.filter(like => like && like.userId);
+
+        const existingLikeIndex = story.likes.findIndex(like => 
+            like.userId && like.userId.toString() === userId
+        );
+        let userLiked;
+        
+        if (existingLikeIndex === -1) {
+            story.likes.push({
+                userId: userId,
+                createdAt: new Date()
+            });
+            userLiked = true;
         } else {
-            story.likes.splice(index, 1);
+            story.likes.splice(existingLikeIndex, 1);
+            userLiked = false;
         }
+        
         await story.save();
 
+        const formattedLikes = story.likes
+            .filter(like => like && like.userId)
+            .map(like => ({
+                userId: like.userId,
+                createdAt: like.createdAt.toISOString()
+            }));
+
         return h.response({
-            error: false,
-            message: index === -1 ? 'Story disukai' : 'Like dibatalkan',
-            likeCount: story.likes.length
+            status: "success",
+            message: userLiked ? 'Story berhasil disukai' : 'Like story berhasil dihapus',
+            data: {
+                story: {
+                    id: story._id,
+                    content: story.content,
+                    likeCount: story.likes.length,
+                    userLiked: userLiked,
+                    likes: formattedLikes
+                }
+            }
         }).code(200);
     } catch (error) {
         console.error('Error likeStoryHandler:', error);

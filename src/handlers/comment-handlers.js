@@ -280,18 +280,45 @@ const likeCommentHandler = async (request, h) => {
             }).code(404);
         }
 
-        const index = comment.likes.indexOf(userId);
-        if (index === -1) {
-            comment.likes.push(userId);
+        comment.likes = comment.likes.filter(like => like && like.userId);
+
+        const existingLikeIndex = comment.likes.findIndex(like => 
+            like.userId && like.userId.toString() === userId
+        );
+        let userLiked;
+        
+        if (existingLikeIndex === -1) {
+            comment.likes.push({
+                userId: userId,
+                createdAt: new Date()
+            });
+            userLiked = true;
         } else {
-            comment.likes.splice(index, 1);
+            comment.likes.splice(existingLikeIndex, 1);
+            userLiked = false;
         }
+        
         await comment.save();
 
+        const formattedLikes = comment.likes
+            .filter(like => like && like.userId)
+            .map(like => ({
+                userId: like.userId,
+                createdAt: like.createdAt.toISOString()
+            }));
+
         return h.response({
-            error: false,
-            message: index === -1 ? 'Comment disukai' : 'Like dibatalkan',
-            likeCount: comment.likes.length
+            status: "success",
+            message: userLiked ? 'Komentar berhasil disukai' : 'Like komentar dihapus',
+            data: {
+                comment: {
+                    id: comment._id,
+                    content: comment.content,
+                    likeCount: comment.likes.length,
+                    userLiked: userLiked,
+                    likes: formattedLikes
+                }
+            }
         }).code(200);
     } catch (error) {
         console.error('Error likeCommentHandler:', error);
