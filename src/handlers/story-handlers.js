@@ -177,6 +177,12 @@ const getStoriesHandler = async (request, h) => {
             })
         );
 
+        // Add this aggregation to get like counts
+        const likeCounts = await Story.aggregate([
+            { $match: { _id: { $in: allStoryIds } } },
+            { $project: { _id: 1, likeCount: { $size: "$likes" } } }
+        ]);
+
         const commentCountMap = {};
         commentCounts.forEach(item => {
             commentCountMap[item.storyId] = {
@@ -208,8 +214,7 @@ const getStoriesHandler = async (request, h) => {
             // Check if current user has liked this story
             const isLiked = userId && story.likes ? 
                 story.likes.some(like => like.userId && like.userId.toString() === userId) : 
-                false
-            ;
+                false;
             
             const likeCount = story.likes ? story.likes.length : 0;
             
