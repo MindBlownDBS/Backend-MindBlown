@@ -161,6 +161,7 @@ const replyCommentHandler = async (request, h) => {
 const getCommentDetailHandler = async (request, h) => {
     try {
         const { commentId } = request.params;
+        const userId = request.auth.credentials ? request.auth.credentials.id : null;
 
         if (!commentId || commentId === 'undefined') {
             return h.response({
@@ -229,13 +230,12 @@ const getCommentDetailHandler = async (request, h) => {
                 replies: formatReplies(reply.replies || []),
                 createdAt: reply.createdAt,
                 updatedAt: reply.updatedAt,
-                likes: reply.likes ? reply.likes.map(like => ({
-                    userId: like.userId,
-                    createdAt: like.createdAt.toISOString()
-                })) : [],
                 __v: reply.__v,
                 repliesCount: reply.replies ? reply.replies.length : 0,
-                likeCount: reply.likes ? reply.likes.length : 0
+                likeCount: reply.likes ? reply.likes.length : 0,
+                isLiked: userId && reply.likes ? 
+                    reply.likes.some(like => like.userId && like.userId.toString() === userId) : 
+                    false
             }));
         };
 
@@ -250,13 +250,12 @@ const getCommentDetailHandler = async (request, h) => {
             replies: formatReplies(comment.replies || []),
             createdAt: comment.createdAt,
             updatedAt: comment.updatedAt,
-            likes: comment.likes ? comment.likes.map(like => ({
-                userId: like.userId,
-                createdAt: like.createdAt.toISOString()
-            })) : [],
             __v: comment.__v,
             repliesCount: comment.replies ? comment.replies.length : 0,
             likeCount: comment.likes ? comment.likes.length : 0,
+            isLiked: userId && comment.likes ? 
+                comment.likes.some(like => like.userId && like.userId.toString() === userId) : 
+                false,
             storyId: story ? story._id : null,
             storyTitle: story ? story.title : null
         };
