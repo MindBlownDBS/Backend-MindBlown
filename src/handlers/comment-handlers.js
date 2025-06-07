@@ -277,6 +277,9 @@ const getCommentDetailHandler = async (request, h) => {
             __v: comment.__v,
             repliesCount: comment.replies ? comment.replies.length : 0,
             likeCount: comment.likes ? comment.likes.length : 0,
+            isLiked: userId && comment.likes ? 
+                comment.likes.some(like => like.userId && like.userId.toString() === userId) : 
+                false,
             storyId: story ? story._id : null,
             storyTitle: story ? story.title : null,
             userLiked: userLikedComment // Tambahkan informasi userLiked untuk komentar utama
