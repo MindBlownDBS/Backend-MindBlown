@@ -415,7 +415,6 @@ const getStoryDetailHandler = async (request, h) => {
             comment.isLiked = comment.likes ? 
                 comment.likes.some(like => like.userId && like.userId.toString() === userId) : 
                 false;
-            delete comment.likes;
         });
         
         allReplies.forEach(reply => {
@@ -429,7 +428,6 @@ const getStoryDetailHandler = async (request, h) => {
             reply.isLiked = reply.likes ? 
                 reply.likes.some(like => like.userId && like.userId.toString() === userId) : 
                 false;
-            delete reply.likes;
         });
         
         const commentMap = {};

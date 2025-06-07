@@ -21,12 +21,20 @@ const getUserProfileHandler = async (request, h) => {
         }).lean().sort({ createdAt: -1 });
         
         const isOwner = user._id.toString() === requesterId;
-        
-        const formattedStories = userStories.map(story => ({
-            ...story,
-            likeCount: story.likes ? story.likes.length : 0,
-            commentCount: story.comments ? story.comments.length : 0
-        }));
+
+        const formattedStories = userStories.map(story => {
+            const isLiked = requesterId && story.likes ? 
+                story.likes.some(like => like.userId && like.userId.toString() === requesterId) : 
+                false
+            ;
+                
+            return {
+                ...story,
+                likeCount: story.likes ? story.likes.length : 0,
+                commentCount: story.comments ? story.comments.length : 0,
+                userLiked: isLiked,
+            };
+        });
         
         const responseData = {
             username: user.username,

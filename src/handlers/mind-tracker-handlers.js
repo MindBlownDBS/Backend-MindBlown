@@ -115,7 +115,7 @@ const triggerMindTrackerRemindersHandler = async (request, h) => {
         // Only allow administrators to trigger this
         const user = request.auth.credentials;
         
-        // Optional: Add admin check here
+        // Optional: admin check (in case the trigger is bugged and need to be manually triggered)
         // if (!user.isAdmin) {
         //     return h.response({
         //         error: true,
