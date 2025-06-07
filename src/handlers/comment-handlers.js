@@ -17,7 +17,7 @@ const commentStoryHandler = async (request, h) => {
         const { content } = request.payload;
         const user = request.auth.credentials;
 
-        if (!content) {
+        if (!content || content.trim() === '') { // Validasi tambahan untuk konten kosong
             return h.response({
                 error: true,
                 message: 'Komentar tidak boleh kosong'
@@ -36,7 +36,10 @@ const commentStoryHandler = async (request, h) => {
             userId: user.id,
             username: user.username,
             name: user.name,
-            content
+            content,
+            likes: [], // Initialize likes array
+            likeCount: 0, // Initialize likeCount
+            userLiked: false // Initialize userLiked status
         });
         
         await comment.save();
@@ -65,11 +68,21 @@ const commentStoryHandler = async (request, h) => {
             );
         }
 
+        // Return created comment with like info
         return h.response({
             error: false,
             message: 'Komentar berhasil ditambahkan',
             commentCount: story.comments.length,
-            commentId: comment._id
+            commentId: comment._id,
+            comment: {
+                _id: comment._id,
+                content: comment.content,
+                username: comment.username,
+                name: comment.name,
+                createdAt: comment.createdAt,
+                likeCount: 0,
+                userLiked: false
+            }
         }).code(201);
     } catch (error) {
         console.error('Error commentStoryHandler:', error);
@@ -161,6 +174,8 @@ const replyCommentHandler = async (request, h) => {
 const getCommentDetailHandler = async (request, h) => {
     try {
         const { commentId } = request.params;
+        // Dapatkan userId dari credential request
+        const userId = request.auth.credentials.id;
 
         if (!commentId || commentId === 'undefined') {
             return h.response({
@@ -216,23 +231,36 @@ const getCommentDetailHandler = async (request, h) => {
             story = await Story.findOne({ comments: commentId });
         }
 
+        // Check if current user has liked this comment
+        const userLikedComment = comment.likes && 
+                              comment.likes.some(like => like.userId && 
+                                               like.userId.toString() === userId);
+
         // Helper function to format replies recursively
         const formatReplies = (replies) => {
-            return replies.map(reply => ({
-                _id: reply._id,
-                userId: reply.userId._id || reply.userId,
-                username: reply.username,
-                name: reply.name,
-                content: reply.content,
-                parentCommentId: reply.parentCommentId,
-                profilePicture: reply.userId.profilePicture || null,
-                replies: formatReplies(reply.replies || []),
-                createdAt: reply.createdAt,
-                updatedAt: reply.updatedAt,
-                __v: reply.__v,
-                repliesCount: reply.replies ? reply.replies.length : 0,
-                likeCount: reply.likes ? reply.likes.length : 0
-            }));
+            return replies.map(reply => {
+                // Check if user has liked this reply
+                const userLikedReply = reply.likes && 
+                                   reply.likes.some(like => like.userId && 
+                                                  like.userId.toString() === userId);
+                
+                return {
+                    _id: reply._id,
+                    userId: reply.userId._id || reply.userId,
+                    username: reply.username,
+                    name: reply.name,
+                    content: reply.content,
+                    parentCommentId: reply.parentCommentId,
+                    profilePicture: reply.userId.profilePicture || null,
+                    replies: formatReplies(reply.replies || []),
+                    createdAt: reply.createdAt,
+                    updatedAt: reply.updatedAt,
+                    __v: reply.__v,
+                    repliesCount: reply.replies ? reply.replies.length : 0,
+                    likeCount: reply.likes ? reply.likes.length : 0,
+                    userLiked: userLikedReply // Tambahkan informasi userLiked untuk setiap reply
+                }
+            });
         };
 
         const commentDetail = {
@@ -250,7 +278,8 @@ const getCommentDetailHandler = async (request, h) => {
             repliesCount: comment.replies ? comment.replies.length : 0,
             likeCount: comment.likes ? comment.likes.length : 0,
             storyId: story ? story._id : null,
-            storyTitle: story ? story.title : null
+            storyTitle: story ? story.title : null,
+            userLiked: userLikedComment // Tambahkan informasi userLiked untuk komentar utama
         };
 
         return h.response({

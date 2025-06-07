@@ -151,9 +151,10 @@ const deleteStoryHandler = async (request, h) => {
 
 const getStoriesHandler = async (request, h) => {
     try {
+        const userId = request.auth.credentials.id;
+
         const stories = await Story.find({})
             .sort({ createdAt: -1 })
-            .select('-likes -comments -viewedBy')
             .lean();
 
         const allStoryIds = stories.map(story => story._id);
@@ -194,6 +195,17 @@ const getStoriesHandler = async (request, h) => {
             likeCountMap[item._id.toString()] = item.likeCount;
         });
 
+        // Get user's liked stories
+        const userLikedStories = await Story.find(
+            { 'likes.userId': userId },
+            { _id: 1 }
+        ).lean();
+        
+        const userLikedMap = {};
+        userLikedStories.forEach(story => {
+            userLikedMap[story._id.toString()] = true;
+        });
+
         const formattedStories = stories.map(story => {
             const storyId = story._id.toString();
             const commentData = commentCountMap[storyId] || { commentCount: 0, totalCommentCount: 0 };
@@ -203,7 +215,8 @@ const getStoriesHandler = async (request, h) => {
                 ...story,
                 likeCount: likeCount,
                 commentCount: commentData.commentCount,
-                totalCommentCount: commentData.totalCommentCount
+                totalCommentCount: commentData.totalCommentCount,
+                userLiked: userLikedMap[storyId] || false
             };
         });
 
@@ -335,6 +348,10 @@ const getStoryDetailHandler = async (request, h) => {
             story.viewCount = (story.viewCount || 0) + 1;
         }
 
+        const userLiked = fullStory.likes && fullStory.likes.some(like => 
+            like.userId && like.userId.toString() === userId
+        );
+
         const comments = await Comment.find({
             _id: { $in: story.comments }
         }).lean();
@@ -420,7 +437,8 @@ const getStoryDetailHandler = async (request, h) => {
             ...story,
             likeCount: fullStory.likes.length,
             commentCount: story.comments.length,
-            totalCommentCount: totalCommentCount
+            totalCommentCount: totalCommentCount,
+            userLiked: userLiked,
         };
 
         return h.response({
