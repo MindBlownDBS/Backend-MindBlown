@@ -5,12 +5,33 @@ const { key, algorithm } = require('../config/jwt');
 
 const registerHandler = async (request, h) => {
     try {
-        const { username, name, email, password } = request.payload;
+        const { username, name, email, password, preferences } = request.payload;
 
         if (!username || !name || !email || !password) {
             return h.response({ 
                 error: true,
                 message: 'Semua field harus diisi'
+            }).code(400);
+        }
+
+        const validPreferences = [
+            'Olahraga', 'Belajar', 'Produktivitas', 'Relaksasi', 
+            'Hiburan', 'Kesehatan', 'Pengembangan Diri', 'Sosial', 
+            'Kreativitas', 'Hobi', 'Rumah Tangga'
+        ];
+
+        if (!preferences || !Array.isArray(preferences) || preferences.length === 0) {
+            return h.response({ 
+                error: true,
+                message: 'Pilih minimal satu preferensi'
+            }).code(400);
+        }
+
+        const invalidPreferences = preferences.filter(pref => !validPreferences.includes(pref));
+        if (invalidPreferences.length > 0) {
+            return h.response({ 
+                error: true,
+                message: `Preferensi tidak valid: ${invalidPreferences.join(', ')}`
             }).code(400);
         }
 
@@ -49,6 +70,7 @@ const registerHandler = async (request, h) => {
         const newUser = new users({
             username,
             name,
+            preferences,
             email,
             passwordHash
         });
@@ -61,6 +83,7 @@ const registerHandler = async (request, h) => {
             data: {
                 username: newUser.username,
                 name: newUser.name,
+                preferences: newUser.preferences,
                 email: newUser.email
             }
         }).code(201);
