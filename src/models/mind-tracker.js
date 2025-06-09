@@ -16,7 +16,7 @@ const mindTrackerSchema = new mongoose.Schema({
     },
     mood: { 
         type: String, 
-        required: true 
+        required: false 
     },
     progress: { 
         type: String, 
