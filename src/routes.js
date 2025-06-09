@@ -23,7 +23,8 @@ const {
     getNotificationsHandler,
     markNotificationReadHandler,
     markAllNotificationsReadHandler,
-    triggerMindTrackerRemindersHandler
+    triggerMindTrackerRemindersHandler,
+    regenerateRecommendationsHandler
 } = require("./handlers/handler");
 
 const routes = [
@@ -87,6 +88,14 @@ const routes = [
         method: 'GET',
         path: '/recommendations/{username}',
         handler: getRecommendationsHandler,
+        options: {
+            auth: 'jwt',
+        }
+    },
+    {
+        method: 'POST',
+        path: '/recommendations/{username}/regenerate',
+        handler: regenerateRecommendationsHandler,
         options: {
             auth: 'jwt',
         }

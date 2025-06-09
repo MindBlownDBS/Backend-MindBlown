@@ -45,5 +45,6 @@ module.exports = {
     triggerMindTrackerRemindersHandler: mindTrackerHandlers.triggerMindTrackerRemindersHandler,
 
     // Recommendations handlers
-    getRecommendationsHandler: recommendationsHandlers.getRecommendationsHandler
+    getRecommendationsHandler: recommendationsHandlers.getRecommendationsHandler,
+    regenerateRecommendationsHandler: recommendationsHandlers.regenerateRecommendationsHandler
 };
