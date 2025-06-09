@@ -2,6 +2,7 @@ const Bcrypt = require('bcrypt');
 const JWT = require('@hapi/jwt');
 const users = require('../models/user');
 const { key, algorithm } = require('../config/jwt');
+const { generateUserRecommendations } = require('../services/recommendations');
 
 const registerHandler = async (request, h) => {
     try {
@@ -77,6 +78,12 @@ const registerHandler = async (request, h) => {
 
         await newUser.save();
 
+        const recommendationResult = await generateUserRecommendations(newUser._id, preferences);
+        
+        if (!recommendationResult.success) {
+            console.error('Failed to generate recommendations:', recommendationResult.error);
+        }
+
         return h.response({
             error: false,
             message: 'Registrasi berhasil',
@@ -84,7 +91,8 @@ const registerHandler = async (request, h) => {
                 username: newUser.username,
                 name: newUser.name,
                 preferences: newUser.preferences,
-                email: newUser.email
+                email: newUser.email,
+                recommendationsGenerated: recommendationResult.success
             }
         }).code(201);
     } catch (error) {

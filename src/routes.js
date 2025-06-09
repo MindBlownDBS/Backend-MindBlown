@@ -6,6 +6,7 @@ const {
     mindTrackerHandler,
     checkMindTrackerHandler,
     getMindTrackerHandler, 
+    getRecommendationsHandler,
     createStoryHandler, 
     editStoryHandler,
     deleteStoryHandler,
@@ -78,6 +79,14 @@ const routes = [
         method: 'GET',
         path: '/mind-tracker/{date}',
         handler: getMindTrackerHandler,
+        options: {
+            auth: 'jwt',
+        }
+    },
+    {
+        method: 'GET',
+        path: '/recommendations/{username}',
+        handler: getRecommendationsHandler,
         options: {
             auth: 'jwt',
         }

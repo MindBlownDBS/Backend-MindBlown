@@ -4,6 +4,7 @@ const storyHandlers = require('./story-handlers');
 const commentHandlers = require('./comment-handlers');
 const notificationHandlers = require('./notification-handlers');
 const mindTrackerHandlers = require('./mind-tracker-handlers');
+const recommendationsHandlers = require('./recommendations-handlers');
 
 module.exports = {
     // Auth handlers
@@ -41,5 +42,8 @@ module.exports = {
     mindTrackerHandler: mindTrackerHandlers.mindTrackerHandler,
     checkMindTrackerHandler: mindTrackerHandlers.checkMindTrackerHandler,
     getMindTrackerHandler: mindTrackerHandlers.getMindTrackerHandler,
-    triggerMindTrackerRemindersHandler: mindTrackerHandlers.triggerMindTrackerRemindersHandler
+    triggerMindTrackerRemindersHandler: mindTrackerHandlers.triggerMindTrackerRemindersHandler,
+
+    // Recommendations handlers
+    getRecommendationsHandler: recommendationsHandlers.getRecommendationsHandler
 };
