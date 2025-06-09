@@ -3,14 +3,14 @@ const { sendMindTrackerReminders } = require('../services/scheduler');
 
 const mindTrackerHandler = async (request, h) => {
     try {
-        const { progress, mood } = request.payload;        
+        const { progress } = request.payload;        
         const userId = request.auth.credentials.id;
         const username = request.auth.credentials.username;
 
-        if (!progress || !mood) {
+        if (!progress) {
             return h.response({ 
                 error: true,
-                message: 'Fields progres dan mood harus diisi'
+                message: 'Fields progres harus diisi'
             }).code(400);
         }
 
@@ -18,7 +18,6 @@ const mindTrackerHandler = async (request, h) => {
             userId: userId,
             username: username,
             progress,
-            mood,
             date: new Date().toISOString(),
             createdAt: new Date().toISOString()
         });
