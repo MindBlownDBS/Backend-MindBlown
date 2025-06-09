@@ -102,7 +102,6 @@ const regenerateRecommendationsHandler = async (request, h) => {
                 userId: regenerationResult.data.userId._id,
                 username: regenerationResult.data.userId.username,
                 name: regenerationResult.data.userId.name,
-                recommendations: regenerationResult.data.recommendations,
                 regeneratedAt: new Date()
             }
         }).code(200);
