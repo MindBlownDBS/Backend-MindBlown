@@ -23,10 +23,9 @@ const getUserProfileHandler = async (request, h) => {
         const isOwner = user._id.toString() === requesterId;
 
         const formattedStories = userStories.map(story => {
-            const isLiked = requesterId && story.likes ? 
-                story.likes.some(like => like.userId && like.userId.toString() === requesterId) : 
-                false
-            ;
+            const isLiked = requesterId && story.likes ? story.likes.some(like => 
+                like.userId && like.userId.toString() === requesterId
+            ) : false;
                 
             return {
                 ...story,

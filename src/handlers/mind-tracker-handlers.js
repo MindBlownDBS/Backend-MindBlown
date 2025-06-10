@@ -68,14 +68,12 @@ const getMindTrackerHandler = async (request, h) => {
         const { date } = request.params;
         const { id: userId } = request.auth.credentials;
         
-        // Create start and end date for the given date (to match entire day)
         const startDate = new Date(date);
         startDate.setHours(0, 0, 0, 0);
         
         const endDate = new Date(date);
         endDate.setHours(23, 59, 59, 999);
         
-        // Find entry in database for this user and date range
         const entry = await mindTracker.findOne({
             userId,
             date: {
@@ -111,16 +109,7 @@ const getMindTrackerHandler = async (request, h) => {
 
 const triggerMindTrackerRemindersHandler = async (request, h) => {
     try {
-        // Only allow administrators to trigger this
         const user = request.auth.credentials;
-        
-        // Optional: admin check (in case the trigger is bugged and need to be manually triggered)
-        // if (!user.isAdmin) {
-        //     return h.response({
-        //         error: true,
-        //         message: 'Unauthorized'
-        //     }).code(403);
-        // }
         
         await sendMindTrackerReminders();
         

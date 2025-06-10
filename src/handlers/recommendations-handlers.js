@@ -22,9 +22,7 @@ const getRecommendationsHandler = async (request, h) => {
             }).code(404);
         }
         
-        const recommendations = await Recommendation.findOne({ userId: user._id })
-            .populate('userId', 'username name email')
-            .sort({ createdAt: -1 });
+        const recommendations = await Recommendation.findOne({ userId: user._id }).populate('userId', 'username name email').sort({ createdAt: -1 });
         
         if (!recommendations) {
             return h.response({

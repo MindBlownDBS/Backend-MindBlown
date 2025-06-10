@@ -17,7 +17,6 @@ const sendPushNotification = async (userId, title, body, data = {}) => {
             return;
         }
 
-        // Validate subscription format
         const subscription = user.pushSubscription;
         if (!subscription.endpoint || !subscription.keys) {
             console.log('Invalid subscription format for user:', userId);
@@ -32,17 +31,15 @@ const sendPushNotification = async (userId, title, body, data = {}) => {
         });
 
         const response = await webpush.sendNotification(
-            subscription, // Pass the full subscription object
+            subscription,
             payload
         );
         
-        // console.log('Push notification sent:', response);
         return response;
     } catch (error) {
         console.error('Error sending push notification:', error);
         
         if (error.statusCode === 410 || error.statusCode === 404) {
-            // Remove invalid subscription
             const User = require('../models/user');
             await User.findByIdAndUpdate(userId, { 
                 $unset: { pushSubscription: 1 } 

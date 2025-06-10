@@ -17,7 +17,7 @@ const commentStoryHandler = async (request, h) => {
         const { content } = request.payload;
         const user = request.auth.credentials;
 
-        if (!content || content.trim() === '') { // Validasi tambahan untuk konten kosong
+        if (!content || content.trim() === '') {
             return h.response({
                 error: true,
                 message: 'Komentar tidak boleh kosong'
@@ -37,9 +37,9 @@ const commentStoryHandler = async (request, h) => {
             username: user.username,
             name: user.name,
             content,
-            likes: [], // Initialize likes array
-            likeCount: 0, // Initialize likeCount
-            userLiked: false // Initialize userLiked status
+            likes: [],
+            likeCount: 0,
+            userLiked: false
         });
         
         await comment.save();
@@ -47,7 +47,6 @@ const commentStoryHandler = async (request, h) => {
         story.comments.push(comment._id);
         await story.save();
 
-        // Create notification if the commenter is not the story owner
         if (user.id !== story.userId.toString()) {
             const notification = new Notification({
                 userId: story.userId,
@@ -60,7 +59,6 @@ const commentStoryHandler = async (request, h) => {
             });
             await notification.save();
 
-            // Send push notification
             await sendPushNotification(
                 story.userId,
                 'Komentar Baru',
@@ -68,7 +66,6 @@ const commentStoryHandler = async (request, h) => {
             );
         }
 
-        // Return created comment with like info
         return h.response({
             error: false,
             message: 'Komentar berhasil ditambahkan',
@@ -136,7 +133,6 @@ const replyCommentHandler = async (request, h) => {
             }
         }
 
-        // Create notification if the replier is not the comment owner
         if (user.id !== parentComment.userId.toString()) {
             const notification = new Notification({
                 userId: parentComment.userId,
@@ -149,7 +145,6 @@ const replyCommentHandler = async (request, h) => {
             });
             await notification.save();
 
-            // Send push notification
             await sendPushNotification(
                 parentComment.userId,
                 'Balasan Baru',
@@ -174,7 +169,6 @@ const replyCommentHandler = async (request, h) => {
 const getCommentDetailHandler = async (request, h) => {
     try {
         const { commentId } = request.params;
-        // Dapatkan userId dari credential request
         const userId = request.auth.credentials.id;
 
         if (!commentId || commentId === 'undefined') {
@@ -184,7 +178,6 @@ const getCommentDetailHandler = async (request, h) => {
             }).code(400);
         }
 
-        // Recursive population of replies
         const comment = await Comment.findById(commentId).populate({
             path: 'replies',
             populate: [
@@ -218,31 +211,25 @@ const getCommentDetailHandler = async (request, h) => {
             }).code(404);
         }
 
-        // Find the story this comment belongs to
         let story = null;
         if (comment.parentCommentId) {
-            // This is a reply, find the original comment's story
             const originalComment = await Comment.findById(comment.parentCommentId);
             if (originalComment) {
                 story = await Story.findOne({ comments: originalComment._id });
             }
         } else {
-            // This is a main comment
             story = await Story.findOne({ comments: commentId });
         }
 
-        // Check if current user has liked this comment
-        const userLikedComment = comment.likes && 
-                              comment.likes.some(like => like.userId && 
-                                               like.userId.toString() === userId);
+        const userLikedComment = comment.likes && comment.likes.some(
+            like => like.userId && like.userId.toString() === userId
+        );
 
-        // Helper function to format replies recursively
         const formatReplies = (replies) => {
             return replies.map(reply => {
-                // Check if user has liked this reply
-                const userLikedReply = reply.likes && 
-                                   reply.likes.some(like => like.userId && 
-                                                  like.userId.toString() === userId);
+                const userLikedReply = reply.likes && reply.likes.some(
+                    like => like.userId && like.userId.toString() === userId
+                );
                 
                 return {
                     _id: reply._id,
@@ -258,7 +245,7 @@ const getCommentDetailHandler = async (request, h) => {
                     __v: reply.__v,
                     repliesCount: reply.replies ? reply.replies.length : 0,
                     likeCount: reply.likes ? reply.likes.length : 0,
-                    userLiked: userLikedReply // Tambahkan informasi userLiked untuk setiap reply
+                    userLiked: userLikedReply
                 }
             });
         };
@@ -277,12 +264,12 @@ const getCommentDetailHandler = async (request, h) => {
             __v: comment.__v,
             repliesCount: comment.replies ? comment.replies.length : 0,
             likeCount: comment.likes ? comment.likes.length : 0,
-            isLiked: userId && comment.likes ? 
-                comment.likes.some(like => like.userId && like.userId.toString() === userId) : 
-                false,
+            isLiked: userId && comment.likes ? comment.likes.some(like => 
+                like.userId && like.userId.toString() === userId
+            ) : false,
             storyId: story ? story._id : null,
             storyTitle: story ? story.title : null,
-            userLiked: userLikedComment // Tambahkan informasi userLiked untuk komentar utama
+            userLiked: userLikedComment
         };
 
         return h.response({

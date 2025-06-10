@@ -41,7 +41,6 @@ const sendMindTrackerReminders = async () => {
                 
                 await notification.save();
                 
-                // Send push notification
                 await sendPushNotification(
                     user._id,
                     'Mind Tracker Reminder',

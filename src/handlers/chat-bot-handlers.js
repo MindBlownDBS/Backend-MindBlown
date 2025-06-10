@@ -1,10 +1,8 @@
 const { v4: uuidv4 } = require('uuid');
 const chatHistory = require('../models/chatHistory');
 
-// Store active WebSocket connections
 const activeConnections = new Map();
 
-// Track last request time per user to prevent rapid requests
 const lastRequestTimes = new Map();
 
 const initializeChatbotWebSocket = (server) => {
@@ -17,11 +15,9 @@ const initializeChatbotWebSocket = (server) => {
     wss.on('connection', (ws, request) => {
         console.log('New chatbot WebSocket connection');
         
-        // Generate connection ID
         const connectionId = uuidv4();
         activeConnections.set(connectionId, ws);
         
-        // Generate anonymous user ID by default
         ws.userId = `anonymous_${uuidv4()}`;
         ws.isAnonymous = true;
         
@@ -32,7 +28,6 @@ const initializeChatbotWebSocket = (server) => {
                 if (data.type === 'chatbot_request') {
                     await handleChatbotRequest(ws, data, connectionId);
                 } else if (data.type === 'auth') {
-                    // Store user authentication info with connection
                     if (data.userId) {
                         ws.userId = data.userId;
                         ws.isAnonymous = false;
@@ -73,7 +68,6 @@ const initializeChatbotWebSocket = (server) => {
             }
         });
         
-        // Send welcome message
         ws.send(JSON.stringify({
             type: 'connected',
             message: 'Connected to MindBlown chatbot',
@@ -90,10 +84,9 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
     const { message, requestId } = data;
     let userId = ws.userId;
     
-    // Generate anonymous user ID if not authenticated
     if (!userId) {
         userId = `anonymous_${uuidv4()}`;
-        ws.userId = userId; // Store for this session
+        ws.userId = userId;
         console.log('Generated anonymous user ID:', userId);
     }
     
@@ -106,11 +99,10 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
         return;
     }
     
-    // Check for rapid requests - enforce minimum 10 second gap
     const lastRequestTime = lastRequestTimes.get(userId) || 0;
     const now = Date.now();
     const timeSinceLastRequest = now - lastRequestTime;
-    const minInterval = 10000; // 10 seconds
+    const minInterval = 10000;
     
     if (timeSinceLastRequest < minInterval) {
         const waitTime = Math.ceil((minInterval - timeSinceLastRequest) / 1000);
@@ -122,31 +114,26 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
         return;
     }
     
-    // Update last request time
     lastRequestTimes.set(userId, now);
     
     try {
-        // Send immediate acknowledgment
         ws.send(JSON.stringify({
             type: 'chatbot_processing',
             message: 'MindBlown sedang memproses pesan Anda...',
             requestId,
-            estimatedTime: '3-5 menit',
+            estimatedTime: '3-10 menit',
             isAnonymous: userId.startsWith('anonymous_')
         }));
         
-        // Call the chatbot API using fetch
         console.log('Calling chatbot API for user:', userId);
         const startTime = Date.now();
         
-        // Create AbortController for timeout (reduced to 5 minutes)
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-            console.log('Request timeout after 5 minutes');
+            console.log('Request timeout after 12 minutes');
             controller.abort();
-        }, 600000);// change to 10 minutes
+        }, 720000);
         
-        // Add a small random delay to prevent simultaneous requests
         await new Promise(resolve => setTimeout(resolve, Math.random() * 2000));
         
         const response = await fetch('https://Cocolele-MindBlown-Chatbot.hf.space/generate', {
@@ -154,8 +141,8 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'Connection': 'close', // Force new connection
-                'User-Agent': `MindBlown-WebSocket/${Date.now()}`, // Unique identifier
+                'Connection': 'close',
+                'User-Agent': `MindBlown-WebSocket/${Date.now()}`,
                 'Cache-Control': 'no-cache'
             },
             body: JSON.stringify({
@@ -163,10 +150,9 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
                 message: message.trim()
             }),
             signal: controller.signal,
-            // Add timeout options for undici
-            timeout: 300000, // 5 minutes
-            headersTimeout: 60000, // 1 minute for headers
-            bodyTimeout: 300000 // 5 minutes for body
+            timeout: 300000,
+            headersTimeout: 60000,
+            bodyTimeout: 300000
         });
         
         clearTimeout(timeoutId);
@@ -184,7 +170,6 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
         
         console.log(`Chatbot API responded in ${processingTime} seconds`);
         
-        // Send the response back through WebSocket
         ws.send(JSON.stringify({
             type: 'chatbot_response',
             data: {
@@ -217,10 +202,9 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
             type: 'chatbot_error',
             message: errorMessage,
             requestId,
-            retryAfter: 30 // Suggest retry after 30 seconds
+            retryAfter: 30
         }));
         
-        // Reset the last request time on error so user can retry sooner
         lastRequestTimes.delete(userId);
     }
 };
@@ -314,9 +298,8 @@ const testChatBotHandler = async (request, h) => {
             }).code(400);
         }
         
-        // Create AbortController for timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 360000); // 6 minutes
+        const timeoutId = setTimeout(() => controller.abort(), 360000);
         
         const response = await fetch('https://Cocolele-MindBlown-Chatbot.hf.space/generate', {
             method: 'POST',

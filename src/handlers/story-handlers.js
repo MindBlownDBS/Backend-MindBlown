@@ -153,9 +153,7 @@ const getStoriesHandler = async (request, h) => {
     try {
         const userId = request.auth.credentials.id;
 
-        const stories = await Story.find({})
-            .sort({ createdAt: -1 })
-            .lean();
+        const stories = await Story.find({}).sort({ createdAt: -1 }).lean();
 
         const allStoryIds = stories.map(story => story._id);
         
@@ -177,7 +175,6 @@ const getStoriesHandler = async (request, h) => {
             })
         );
 
-        // Add this aggregation to get like counts
         const likeCounts = await Story.aggregate([
             { $match: { _id: { $in: allStoryIds } } },
             { $project: { _id: 1, likeCount: { $size: "$likes" } } }
@@ -196,7 +193,6 @@ const getStoriesHandler = async (request, h) => {
             likeCountMap[item._id.toString()] = item.likeCount;
         });
 
-        // Get user's liked stories
         const userLikedStories = await Story.find(
             { 'likes.userId': userId },
             { _id: 1 }
@@ -211,10 +207,9 @@ const getStoriesHandler = async (request, h) => {
             const storyId = story._id.toString();
             const commentData = commentCountMap[storyId] || { commentCount: 0, totalCommentCount: 0 };
             
-            // Check if current user has liked this story
-            const isLiked = userId && story.likes ? 
-                story.likes.some(like => like.userId && like.userId.toString() === userId) : 
-                false;
+            const isLiked = userId && story.likes ? story.likes.some(like => 
+                like.userId && like.userId.toString() === userId
+            ) : false;
             
             const likeCount = story.likes ? story.likes.length : 0;
             
@@ -316,7 +311,6 @@ const getStoryDetailHandler = async (request, h) => {
         const { storyId } = request.params;
         const userId = request.auth.credentials.id;
         
-        // Check if user is authenticated
         if (!request.auth.credentials || !request.auth.credentials.id) {
             return h.response({
                 error: true,
@@ -342,16 +336,15 @@ const getStoryDetailHandler = async (request, h) => {
             }).code(404);
         }
         
-        // Get the full story data for view tracking and like counting
         const fullStory = await Story.findById(storyId)
             .select('likes viewedBy viewCount')
             .lean()
         ;
         
-        // Check if user has already viewed this story
-        const hasViewed = fullStory.viewedBy && fullStory.viewedBy.some(viewerId => viewerId.toString() === userId);
+        const hasViewed = fullStory.viewedBy && fullStory.viewedBy.some(
+            viewerId => viewerId.toString() === userId
+        );
         
-        // Only increment view count if user hasn't viewed before
         if (!hasViewed) {
             await Story.findByIdAndUpdate(
                 storyId,
@@ -412,9 +405,9 @@ const getStoryDetailHandler = async (request, h) => {
                 }
             });
             comment.likeCount = comment.likes ? comment.likes.length : 0;
-            comment.isLiked = comment.likes ? 
-                comment.likes.some(like => like.userId && like.userId.toString() === userId) : 
-                false;
+            comment.isLiked = comment.likes ? comment.likes.some(like => 
+                like.userId && like.userId.toString() === userId
+            ) : false;
         });
         
         allReplies.forEach(reply => {
@@ -425,9 +418,9 @@ const getStoryDetailHandler = async (request, h) => {
                 }
             });
             reply.likeCount = reply.likes ? reply.likes.length : 0;
-            reply.isLiked = reply.likes ? 
-                reply.likes.some(like => like.userId && like.userId.toString() === userId) : 
-                false;
+            reply.isLiked = reply.likes ? reply.likes.some(like => 
+                like.userId && like.userId.toString() === userId
+            ) : false;
         });
         
         const commentMap = {};
@@ -452,11 +445,9 @@ const getStoryDetailHandler = async (request, h) => {
 
         const totalCommentCount = comments.length + allReplies.length;
 
-        // Check if current user has liked this story
-        const isLiked = story.likes ? 
-            story.likes.some(like => like.userId && like.userId.toString() === userId) : 
-            false
-        ;
+        const isLiked = story.likes ? story.likes.some(like => 
+            like.userId && like.userId.toString() === userId    
+        ) : false;
 
         const detail = {
             ...story,
