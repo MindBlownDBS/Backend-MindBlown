@@ -4,6 +4,9 @@ const chatHistory = require('../models/chatHistory');
 // Store active WebSocket connections
 const activeConnections = new Map();
 
+// Track last request time per user to prevent rapid requests
+const lastRequestTimes = new Map();
+
 const initializeChatbotWebSocket = (server) => {
     const WebSocket = require('ws');
     const wss = new WebSocket.Server({ 
@@ -57,11 +60,17 @@ const initializeChatbotWebSocket = (server) => {
         ws.on('close', () => {
             console.log('Chatbot WebSocket connection closed');
             activeConnections.delete(connectionId);
+            if (ws.userId) {
+                lastRequestTimes.delete(ws.userId);
+            }
         });
         
         ws.on('error', (error) => {
             console.error('WebSocket error:', error);
             activeConnections.delete(connectionId);
+            if (ws.userId) {
+                lastRequestTimes.delete(ws.userId);
+            }
         });
         
         // Send welcome message
@@ -97,6 +106,25 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
         return;
     }
     
+    // Check for rapid requests - enforce minimum 10 second gap
+    const lastRequestTime = lastRequestTimes.get(userId) || 0;
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastRequestTime;
+    const minInterval = 10000; // 10 seconds
+    
+    if (timeSinceLastRequest < minInterval) {
+        const waitTime = Math.ceil((minInterval - timeSinceLastRequest) / 1000);
+        ws.send(JSON.stringify({
+            type: 'error',
+            message: `Mohon tunggu ${waitTime} detik sebelum mengirim pesan lagi`,
+            requestId
+        }));
+        return;
+    }
+    
+    // Update last request time
+    lastRequestTimes.set(userId, now);
+    
     try {
         // Send immediate acknowledgment
         ws.send(JSON.stringify({
@@ -111,26 +139,42 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
         console.log('Calling chatbot API for user:', userId);
         const startTime = Date.now();
         
-        // Create AbortController for timeout
+        // Create AbortController for timeout (reduced to 5 minutes)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 360000);
+        const timeoutId = setTimeout(() => {
+            console.log('Request timeout after 5 minutes');
+            controller.abort();
+        }, 300000); // 5 minutes instead of 6
+        
+        // Add a small random delay to prevent simultaneous requests
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 2000));
         
         const response = await fetch('https://Cocolele-MindBlown-Chatbot.hf.space/generate', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Connection': 'close', // Force new connection
+                'User-Agent': `MindBlown-WebSocket/${Date.now()}`, // Unique identifier
+                'Cache-Control': 'no-cache'
             },
             body: JSON.stringify({
                 user_id: userId,
                 message: message.trim()
             }),
-            signal: controller.signal
+            signal: controller.signal,
+            // Add timeout options for undici
+            timeout: 300000, // 5 minutes
+            headersTimeout: 60000, // 1 minute for headers
+            bodyTimeout: 300000 // 5 minutes for body
         });
         
         clearTimeout(timeoutId);
+        console.log('Response received, status:', response.status);
         
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
         }
         
         const responseData = await response.json();
@@ -159,17 +203,25 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
         
         if (error.name === 'AbortError') {
             errorMessage = 'Request timeout - Chatbot membutuhkan waktu terlalu lama';
+        } else if (error.code === 'UND_ERR_HEADERS_TIMEOUT') {
+            errorMessage = 'Chatbot service sedang sibuk, coba lagi dalam beberapa menit';
+        } else if (error.code === 'UND_ERR_BODY_TIMEOUT') {
+            errorMessage = 'Response timeout - Chatbot membutuhkan waktu terlalu lama';
         } else if (error.message.includes('HTTP error')) {
             errorMessage = `Chatbot API error: ${error.message}`;
-        } else if (error.message.includes('fetch')) {
-            errorMessage = 'Tidak dapat menghubungi chatbot service';
+        } else if (error.message.includes('fetch') || error.code?.startsWith('UND_ERR_')) {
+            errorMessage = 'Tidak dapat menghubungi chatbot service - coba lagi nanti';
         }
         
         ws.send(JSON.stringify({
             type: 'chatbot_error',
             message: errorMessage,
-            requestId
+            requestId,
+            retryAfter: 30 // Suggest retry after 30 seconds
         }));
+        
+        // Reset the last request time on error so user can retry sooner
+        lastRequestTimes.delete(userId);
     }
 };
 
