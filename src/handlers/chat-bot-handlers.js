@@ -131,7 +131,7 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
             type: 'chatbot_processing',
             message: 'MindBlown sedang memproses pesan Anda...',
             requestId,
-            estimatedTime: '3-5 menit',
+            estimatedTime: '3-10 menit',
             isAnonymous: userId.startsWith('anonymous_')
         }));
         
@@ -142,9 +142,9 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
         // Create AbortController for timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
-            console.log('Request timeout after 5 minutes');
+            console.log('Request timeout after 12 minutes');
             controller.abort();
-        }, 600000);// change to 10 minutes
+        }, 720000); // Change to 12 minutes
         
         await new Promise(resolve => setTimeout(resolve, Math.random() * 2000));
         
@@ -153,19 +153,15 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
-                'Connection': 'close', // Force new connection
-                'User-Agent': `MindBlown-WebSocket/${Date.now()}`, // Unique identifier
+                'Keep-Alive': 'timeout=720, max=1000', // Keep-Alive header
+                'User-Agent': `MindBlown-WebSocket/${Date.now()}`,
                 'Cache-Control': 'no-cache'
             },
             body: JSON.stringify({
                 user_id: userId,
                 message: message.trim()
             }),
-            signal: controller.signal,
-            // Set timeouts for fetch
-            timeout: 600000, // 10 minutes
-            headersTimeout: 600000, // 10 minutes for headers
-            bodyTimeout: 600000 // 10 minutes for body
+            signal: controller.signal
         });
         
         clearTimeout(timeoutId);
