@@ -9,8 +9,8 @@ const { initializeChatbotWebSocket } = require('./handlers/chat-bot-handlers');
 const init = async () => {
     await connectDB();
     const server = Hapi.server({
-        port: 5000,
-        host: 'localhost',
+        port: process.env.PORT || 5000,
+        host: process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost',
         routes: {
             cors: {
                 origin: ['*'],
@@ -30,7 +30,7 @@ const init = async () => {
     console.log(`Server berjalan pada ${server.info.uri}`);
 
     const wss = initializeChatbotWebSocket(server.listener);
-    console.log('Chatbot WebSocket server initialized on ws://localhost:5000/chatbot-ws');
+    console.log('Chatbot WebSocket server initialized');
 
     return server;
 };
@@ -38,6 +38,16 @@ const init = async () => {
 process.on('unhandledRejection', (err) => {
     console.log(err);
     process.exit(1);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+    console.log('SIGINT received, shutting down gracefully');
+    process.exit(0);
 });
 
 init();

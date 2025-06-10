@@ -6,6 +6,7 @@ const notificationHandlers = require('./notification-handlers');
 const mindTrackerHandlers = require('./mind-tracker-handlers');
 const recommendationsHandlers = require('./recommendations-handlers');
 const chatBotHandlers = require('./chat-bot-handlers');
+const healthCheckHandler = require('./check-handlers');
 
 module.exports = {
     // Auth handlers
@@ -52,4 +53,8 @@ module.exports = {
     // ChatBot handlers
     getChatHistoryHandler: chatBotHandlers.getChatHistoryHandler,
     testChatBotHandler: chatBotHandlers.testChatBotHandler,
+
+    // Health check handler
+    rootHandler: healthCheckHandler.rootHandler,
+    healthCheckHandler: healthCheckHandler.healthCheckHandler
 };

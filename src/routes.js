@@ -26,7 +26,9 @@ const {
     triggerMindTrackerRemindersHandler,
     regenerateRecommendationsHandler,
     getChatHistoryHandler,
-    testChatBotHandler
+    testChatBotHandler,
+    rootHandler,
+    healthCheckHandler,
 } = require("./handlers/handler");
 
 const routes = [
@@ -255,7 +257,23 @@ const routes = [
                 mode: 'optional',
             }
         }
-    }
+    },
+    {
+        method: 'GET',
+        path: '/',
+        handler: rootHandler,
+        options: {
+            auth: false,
+        }
+    },
+    {
+        method: 'GET',
+        path: '/health',
+        handler: healthCheckHandler,
+        options: {
+            auth: false,
+        }
+    },
 ];
 
 module.exports = routes;
