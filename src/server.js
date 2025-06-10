@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const Hapi = require('@hapi/hapi');
 const JWT = require('@hapi/jwt');
 const routes = require('./routes');
