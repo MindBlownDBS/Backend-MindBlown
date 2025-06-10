@@ -5,6 +5,7 @@ const commentHandlers = require('./comment-handlers');
 const notificationHandlers = require('./notification-handlers');
 const mindTrackerHandlers = require('./mind-tracker-handlers');
 const recommendationsHandlers = require('./recommendations-handlers');
+const chatBotHandlers = require('./chat-bot-handlers');
 
 module.exports = {
     // Auth handlers
@@ -46,5 +47,9 @@ module.exports = {
 
     // Recommendations handlers
     getRecommendationsHandler: recommendationsHandlers.getRecommendationsHandler,
-    regenerateRecommendationsHandler: recommendationsHandlers.regenerateRecommendationsHandler
+    regenerateRecommendationsHandler: recommendationsHandlers.regenerateRecommendationsHandler,
+
+    // ChatBot handlers
+    getChatHistoryHandler: chatBotHandlers.getChatHistoryHandler,
+    testChatBotHandler: chatBotHandlers.testChatBotHandler,
 };

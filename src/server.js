@@ -4,6 +4,7 @@ const routes = require('./routes');
 const connectDB = require('./db');
 const { jwtStrategy } = require('./auth/auth');
 const { initScheduler } = require('./services/scheduler');
+const { initializeChatbotWebSocket } = require('./handlers/chat-bot-handlers');
 
 const init = async () => {
     await connectDB();
@@ -27,6 +28,11 @@ const init = async () => {
 
     await server.start();
     console.log(`Server berjalan pada ${server.info.uri}`);
+
+    const wss = initializeChatbotWebSocket(server.listener);
+    console.log('Chatbot WebSocket server initialized on ws://localhost:5000/chatbot-ws');
+
+    return server;
 };
 
 process.on('unhandledRejection', (err) => {

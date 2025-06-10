@@ -24,7 +24,9 @@ const {
     markNotificationReadHandler,
     markAllNotificationsReadHandler,
     triggerMindTrackerRemindersHandler,
-    regenerateRecommendationsHandler
+    regenerateRecommendationsHandler,
+    getChatHistoryHandler,
+    testChatBotHandler
 } = require("./handlers/handler");
 
 const routes = [
@@ -234,6 +236,24 @@ const routes = [
         handler: triggerMindTrackerRemindersHandler,
         options: {
             auth: 'jwt'
+        }
+    },
+    {
+        method: 'GET',
+        path: '/chatbot/history',
+        handler: getChatHistoryHandler,
+        options: {
+            auth: 'jwt'
+        }
+    },
+    {
+        method: 'POST',
+        path: '/chatbot/test',
+        handler: testChatBotHandler,
+        options: {
+            auth: {
+                mode: 'optional',
+            }
         }
     }
 ];
