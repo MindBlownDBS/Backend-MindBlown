@@ -93,7 +93,7 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
     // Generate anonymous user ID if not authenticated
     if (!userId) {
         userId = `anonymous_${uuidv4()}`;
-        ws.userId = userId;
+        ws.userId = userId; // Store for this session
         console.log('Generated anonymous user ID:', userId);
     }
     
@@ -139,13 +139,14 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
         console.log('Calling chatbot API for user:', userId);
         const startTime = Date.now();
         
-        // Create AbortController for timeout
+        // Create AbortController for timeout (reduced to 5 minutes)
         const controller = new AbortController();
         const timeoutId = setTimeout(() => {
             console.log('Request timeout after 12 minutes');
             controller.abort();
-        }, 720000); // Change to 12 minutes
+        }, 300000); // 5 minutes instead of 6
         
+        // Add a small random delay to prevent simultaneous requests
         await new Promise(resolve => setTimeout(resolve, Math.random() * 2000));
         
         const response = await fetch('https://Cocolele-MindBlown-Chatbot.hf.space/generate', {
@@ -161,7 +162,11 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
                 user_id: userId,
                 message: message.trim()
             }),
-            signal: controller.signal
+            signal: controller.signal,
+            // Add timeout options for undici
+            timeout: 300000, // 5 minutes
+            headersTimeout: 60000, // 1 minute for headers
+            bodyTimeout: 300000 // 5 minutes for body
         });
         
         clearTimeout(timeoutId);
