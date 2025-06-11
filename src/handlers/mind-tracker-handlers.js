@@ -138,6 +138,88 @@ const getMindTrackerHandler = async (request, h) => {
     }
 };
 
+const getWeeklyTrackerHandler = async (request, h) => {
+    try {
+        const { id: userId } = request.auth.credentials;
+        const { startDate } = request.query;
+        
+        let weekStart;
+        if (startDate) {
+            weekStart = new Date(startDate);
+        } else {
+            weekStart = new Date();
+            const day = weekStart.getDay();
+            const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
+            weekStart.setDate(diff);
+        }
+        
+        weekStart.setHours(0, 0, 0, 0);
+        
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        weekEnd.setHours(23, 59, 59, 999);
+        
+        const entries = await mindTracker.find({
+            userId,
+            date: {
+                $gte: weekStart,
+                $lte: weekEnd
+            }
+        }).sort({ date: 1 });
+        
+        const weeklyDetails = [];
+        const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        
+        for (let i = 0; i < 7; i++) {
+            const currentDay = new Date(weekStart);
+            currentDay.setDate(weekStart.getDate() + i);
+            
+            const dayEntry = entries.find(entry => {
+                const entryDate = new Date(entry.date);
+                return entryDate.toDateString() === currentDay.toDateString();
+            });
+            
+            if (dayEntry) {
+                weeklyDetails.push({
+                    date: currentDay.toISOString().split('T')[0],
+                    dayName: dayNames[i],
+                    hasEntry: true,
+                    mood: dayEntry.mood,
+                    progress: dayEntry.progress,
+                    createdAt: dayEntry.createdAt
+                });
+            } else {
+                weeklyDetails.push({
+                    date: currentDay.toISOString().split('T')[0],
+                    dayName: dayNames[i],
+                    hasEntry: false,
+                    mood: null,
+                    progress: null,
+                    createdAt: null
+                });
+            }
+        }
+        
+        return h.response({
+            status: 'success',
+            data: {
+                weekRange: {
+                    start: weekStart.toISOString().split('T')[0],
+                    end: weekEnd.toISOString().split('T')[0]
+                },
+                weeklyDetails: weeklyDetails
+            }
+        }).code(200);
+        
+    } catch (error) {
+        console.error('Error getting weekly mood data:', error);
+        return h.response({
+            status: 'error',
+            message: 'Server error'
+        }).code(500);
+    }
+};
+
 const triggerMindTrackerRemindersHandler = async (request, h) => {
     try {
         const user = request.auth.credentials;
@@ -161,5 +243,6 @@ module.exports = {
     mindTrackerHandler,
     checkMindTrackerHandler,
     getMindTrackerHandler,
+    getWeeklyTrackerHandler,
     triggerMindTrackerRemindersHandler
 };
