@@ -14,10 +14,36 @@ const mindTrackerHandler = async (request, h) => {
             }).code(400);
         }
 
+        let predictedMood = null;
+        let confidence = null;
+        
+        try {
+            const response = await fetch('https://illyaveil-emotion-detection.hf.space/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text: progress
+                })
+            });
+
+            if (response.ok) {
+                const moodData = await response.json();
+                predictedMood = moodData.prediction;
+                confidence = moodData.confidence;
+            } else {
+                console.warn('Mood prediction API failed, continuing without mood');
+            }
+        } catch (apiError) {
+            console.error('Error calling mood prediction API:', apiError);
+        }
+
         const newProgress = await mindTracker.create({
             userId: userId,
             username: username,
             progress,
+            mood: predictedMood,
             date: new Date().toISOString(),
             createdAt: new Date().toISOString()
         });
@@ -25,7 +51,12 @@ const mindTrackerHandler = async (request, h) => {
         return h.response({
             error: false,
             message: 'Progress berhasil disimpan',
-            data: newProgress
+            data: {
+                ...newProgress.toObject(),
+                moodPrediction: predictedMood ? {
+                    mood: predictedMood,
+                } : null
+            }
         }).code(201);
 
     } catch (error) {

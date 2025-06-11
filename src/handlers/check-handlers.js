@@ -9,7 +9,6 @@ const rootHandler = (request, h) => {
                 register: '/register',
                 login: '/login'
             },
-            api: '/api-docs'
         }
     }).code(200);
 };

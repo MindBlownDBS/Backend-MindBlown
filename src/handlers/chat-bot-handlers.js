@@ -187,7 +187,7 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
         let errorMessage = 'Terjadi kesalahan saat memproses pesan Anda';
         
         if (error.name === 'AbortError') {
-            errorMessage = 'Request timeout - Chatbot membutuhkan waktu terlalu lama';
+            errorMessage = 'Request timeout - Chatbot membutuhkan waktu terlalu lama untuk merespon coba refresh halaman ini setelah beberapa menit';
         } else if (error.code === 'UND_ERR_HEADERS_TIMEOUT') {
             errorMessage = 'Chatbot service sedang sibuk, coba lagi dalam beberapa menit';
         } else if (error.code === 'UND_ERR_BODY_TIMEOUT') {
@@ -195,7 +195,7 @@ const handleChatbotRequest = async (ws, data, connectionId) => {
         } else if (error.message.includes('HTTP error')) {
             errorMessage = `Chatbot API error: ${error.message}`;
         } else if (error.message.includes('fetch') || error.code?.startsWith('UND_ERR_')) {
-            errorMessage = 'Tidak dapat menghubungi chatbot service - coba lagi nanti';
+            errorMessage = 'Request timeout - Chatbot membutuhkan waktu terlalu lama untuk merespon coba refresh halaman ini setelah beberapa menit';
         }
         
         ws.send(JSON.stringify({
