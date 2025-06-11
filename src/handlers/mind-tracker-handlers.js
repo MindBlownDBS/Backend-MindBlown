@@ -15,7 +15,6 @@ const mindTrackerHandler = async (request, h) => {
         }
 
         let predictedMood = null;
-        let confidence = null;
         
         try {
             const response = await fetch('https://illyaveil-emotion-detection.hf.space/predict', {
@@ -31,7 +30,6 @@ const mindTrackerHandler = async (request, h) => {
             if (response.ok) {
                 const moodData = await response.json();
                 predictedMood = moodData.prediction;
-                confidence = moodData.confidence;
             } else {
                 console.warn('Mood prediction API failed, continuing without mood');
             }
@@ -39,13 +37,15 @@ const mindTrackerHandler = async (request, h) => {
             console.error('Error calling mood prediction API:', apiError);
         }
 
+        const now = new Date();
+        
         const newProgress = await mindTracker.create({
             userId: userId,
             username: username,
             progress,
             mood: predictedMood,
-            date: new Date().toISOString(),
-            createdAt: new Date().toISOString()
+            date: now,
+            createdAt: now
         });
 
         return h.response({
@@ -176,7 +176,10 @@ const getWeeklyTrackerHandler = async (request, h) => {
             
             const dayEntry = entries.find(entry => {
                 const entryDate = new Date(entry.date);
-                return entryDate.toDateString() === currentDay.toDateString();
+                const entryDateString = entryDate.toISOString().split('T')[0];
+                const currentDateString = currentDay.toISOString().split('T')[0];
+                
+                return entryDateString === currentDateString;
             });
             
             if (dayEntry) {
