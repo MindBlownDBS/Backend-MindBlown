@@ -38,13 +38,14 @@ const mindTrackerHandler = async (request, h) => {
         }
 
         const now = new Date();
+        const indonesianTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
         
         const newProgress = await mindTracker.create({
             userId: userId,
             username: username,
             progress,
             mood: predictedMood,
-            date: now,
+            date: indonesianTime,
             createdAt: now
         });
 
