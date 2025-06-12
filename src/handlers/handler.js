@@ -44,7 +44,7 @@ module.exports = {
     mindTrackerHandler: mindTrackerHandlers.mindTrackerHandler,
     checkMindTrackerHandler: mindTrackerHandlers.checkMindTrackerHandler,
     getMindTrackerHandler: mindTrackerHandlers.getMindTrackerHandler,
-    getWeeklyTrackerHandler: mindTrackerHandlers.getWeeklyTrackerHandler,
+    getMonthlyTrackerHandler: mindTrackerHandlers.getMonthlyTrackerHandler,
     triggerMindTrackerRemindersHandler: mindTrackerHandlers.triggerMindTrackerRemindersHandler,
 
     // Recommendations handlers

@@ -74,8 +74,14 @@ const checkMindTrackerHandler = async (request, h) => {
         const userId = request.auth.credentials.id;
         const { date } = request.params;
         
-        const startDate = new Date(`${date}T00:00:00.000Z`);
-        const endDate = new Date(`${date}T23:59:59.999Z`);
+        const inputDate = new Date(date);
+        
+        const startDate = new Date(inputDate);
+        startDate.setUTCDate(startDate.getUTCDate() - 1);
+        startDate.setUTCHours(17, 0, 0, 0);
+        
+        const endDate = new Date(inputDate);
+        endDate.setUTCHours(16, 59, 59, 999);
         
         const entry = await mindTracker.findOne({
             date: {
@@ -139,63 +145,66 @@ const getMindTrackerHandler = async (request, h) => {
     }
 };
 
-const getWeeklyTrackerHandler = async (request, h) => {
+const getMonthlyTrackerHandler = async (request, h) => {
     try {
         const { id: userId } = request.auth.credentials;
         const { startDate } = request.query;
         
-        let weekStart;
+        let monthStart;
         if (startDate) {
-            weekStart = new Date(startDate);
+            if (startDate.length === 7) {
+                const [year, month] = startDate.split('-');
+                monthStart = new Date(parseInt(year), parseInt(month) - 1, 1);
+            } else {
+                const inputDate = new Date(startDate);
+                monthStart = new Date(inputDate.getFullYear(), inputDate.getMonth(), 1);
+            }
         } else {
-            weekStart = new Date();
-            const day = weekStart.getDay();
-            const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1);
-            weekStart.setDate(diff);
+            const now = new Date();
+            monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         }
         
-        weekStart.setHours(0, 0, 0, 0);
+        monthStart.setHours(0, 0, 0, 0);
         
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        weekEnd.setHours(23, 59, 59, 999);
+        const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+        monthEnd.setHours(23, 59, 59, 999);
         
         const entries = await mindTracker.find({
             userId,
             date: {
-                $gte: weekStart,
-                $lte: weekEnd
+                $gte: monthStart,
+                $lte: monthEnd
             }
         }).sort({ date: 1 });
         
-        const weeklyDetails = [];
-        const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const daysInMonth = monthEnd.getDate();
         
-        for (let i = 0; i < 7; i++) {
-            const currentDay = new Date(weekStart);
-            currentDay.setDate(weekStart.getDate() + i);
+        const monthlyDetails = [];
+        
+        for (let i = 1; i <= daysInMonth; i++) {
+            const currentDay = new Date(monthStart.getFullYear(), monthStart.getMonth(), i);
             
             const dayEntry = entries.find(entry => {
                 const entryDate = new Date(entry.date);
                 const entryDateString = entryDate.toISOString().split('T')[0];
-                const currentDateString = currentDay.toISOString().split('T')[0];
+                const currentDateString = `${currentDay.getFullYear()}-${String(currentDay.getMonth() + 1).padStart(2, '0')}-${String(currentDay.getDate()).padStart(2, '0')}`;
                 
                 return entryDateString === currentDateString;
             });
-            
+                        
             if (dayEntry) {
-                weeklyDetails.push({
-                    date: currentDay.toISOString().split('T')[0],
-                    dayName: dayNames[i],
+                monthlyDetails.push({
+                    date: `${currentDay.getFullYear()}-${String(currentDay.getMonth() + 1).padStart(2, '0')}-${String(currentDay.getDate()).padStart(2, '0')}`,
+                    dayNumber: i,
                     hasEntry: true,
                     mood: dayEntry.mood,
                     progress: dayEntry.progress,
                     createdAt: dayEntry.createdAt
                 });
             } else {
-                weeklyDetails.push({
-                    date: currentDay.toISOString().split('T')[0],
-                    dayName: dayNames[i],
+                monthlyDetails.push({
+                    date: `${currentDay.getFullYear()}-${String(currentDay.getMonth() + 1).padStart(2, '0')}-${String(currentDay.getDate()).padStart(2, '0')}`,
+                    dayNumber: i,
                     hasEntry: false,
                     mood: null,
                     progress: null,
@@ -207,16 +216,18 @@ const getWeeklyTrackerHandler = async (request, h) => {
         return h.response({
             status: 'success',
             data: {
-                weekRange: {
-                    start: weekStart.toISOString().split('T')[0],
-                    end: weekEnd.toISOString().split('T')[0]
+                monthRange: {
+                    start: `${monthStart.getFullYear()}-${String(monthStart.getMonth() + 1).padStart(2, '0')}-${String(monthStart.getDate()).padStart(2, '0')}`,
+                    end: `${monthEnd.getFullYear()}-${String(monthEnd.getMonth() + 1).padStart(2, '0')}-${String(monthEnd.getDate()).padStart(2, '0')}`,
+                    month: monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+                    totalDays: daysInMonth
                 },
-                weeklyDetails: weeklyDetails
+                monthlyDetails: monthlyDetails
             }
         }).code(200);
         
     } catch (error) {
-        console.error('Error getting weekly mood data:', error);
+        console.error('Error getting monthly mood data:', error);
         return h.response({
             status: 'error',
             message: 'Server error'
@@ -247,6 +258,6 @@ module.exports = {
     mindTrackerHandler,
     checkMindTrackerHandler,
     getMindTrackerHandler,
-    getWeeklyTrackerHandler,
+    getMonthlyTrackerHandler,
     triggerMindTrackerRemindersHandler
 };
