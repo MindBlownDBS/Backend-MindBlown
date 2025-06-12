@@ -24,7 +24,7 @@ MindBlown adalah API platform pelacakan kesehatan mental dan komunitas yang komp
 
 1. Clone repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/MindBlownDBS/Backend-MindBlown
 cd Backend-MindBlown
 ```
 
@@ -498,10 +498,6 @@ CMD ["npm", "start"]
 3. Commit perubahan Anda (`git commit -m 'Tambah FiturMenakjubkan'`)
 4. Push ke branch (`git push origin feature/FiturMenakjubkan`)
 5. Buka Pull Request
-
-## 📄 Lisensi
-
-Proyek ini dilisensikan di bawah Lisensi ISC.
 
 ## 🆘 Dukungan
 
