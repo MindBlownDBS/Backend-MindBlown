@@ -15,11 +15,7 @@ const init = async () => {
         host: process.env.NODE_ENV === 'production' ? '0.0.0.0' : 'localhost',
         routes: {
             cors: {
-                origin: ['https://mindblown.netlify.app'],
-                headers: ['Accept', 'Authorization', 'Content-Type', 'If-None-Match'],
-                additionalHeaders: ['X-Requested-With'],
-                credentials: true,
-                methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS']
+                origin: ['*'],
             },
         },
     });
